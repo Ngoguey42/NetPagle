@@ -14,18 +14,18 @@ from constants import *
 
 encoding_layers = [
     Convolution2D(64, (kernel, kernel), padding='same', input_shape=(img_d, img_h, img_w)),
-    BatchNormalization(),
+    # BatchNormalization(),
     Activation('relu'),
     Convolution2D(64, (kernel, kernel), padding='same'),
-    BatchNormalization(),
+    # BatchNormalization(),
     Activation('relu'),
     MaxPooling2D(pool_size=(2, 2)),
 
     Convolution2D(128, (kernel, kernel), padding='same'),
-    BatchNormalization(),
+    # BatchNormalization(),
     Activation('relu'),
     Convolution2D(128, (kernel, kernel), padding='same'),
-    BatchNormalization(),
+    # BatchNormalization(),
     Activation('relu'),
     MaxPooling2D(pool_size=(2, 2)),
 
@@ -99,18 +99,18 @@ decoding_layers = [
 
     UpSampling2D(),
     Convolution2D(128, (kernel, kernel), padding='same'),
-    BatchNormalization(),
+    # BatchNormalization(),
     Activation('relu'),
     Convolution2D(64, (kernel, kernel), padding='same'),
-    BatchNormalization(),
+    # BatchNormalization(),
     Activation('relu'),
 
     UpSampling2D(),
     Convolution2D(64, (kernel, kernel), padding='same'),
-    BatchNormalization(),
+    # BatchNormalization(),
     Activation('relu'),
     Convolution2D(n_labels, (1, 1), padding='valid'),
-    BatchNormalization(),
+    # BatchNormalization(),
 ]
 
 def _create_model():
@@ -127,12 +127,18 @@ def _create_model():
     return autoencoder
 
 names = paths.create_names_list()
+names = sorted(names)
 x = [paths.img_of_name(fname) for fname in names]
 y = [paths.mask_of_name(fname) for fname in names]
 
 x = np.stack(x)
 y = np.stack(y)
 print('xy shapes   ', x.shape, y.shape)
+print("Input data: xshape:{}, xsize:{}GB, yshape:{}, ymean{:%}".format(
+    x.shape, x.size / 1024 ** 3,
+    y.shape, y.mean(),
+))
+
 
 batch_size = 1
 
@@ -151,9 +157,16 @@ else:
 class ModelCheckpoint(keras.callbacks.Callback):
     def __init__(self):
         super(ModelCheckpoint, self).__init__()
+        self.i = 0
 
     def on_epoch_end(self, epoch, logs=None):
-        path = paths.create_model_path()
+        self.i += 1
+        # if self.i % 6 != 0:
+            # return
+        loss = logs.get('loss', -42)
+        acc = logs.get('acc', -42)
+
+        path = paths.create_model_path(epoch, loss, acc)
         print("Saving to {} at epoch {} ({})".format(
             path, epoch, logs
         ))
@@ -161,7 +174,7 @@ class ModelCheckpoint(keras.callbacks.Callback):
 
 print('Fiting')
 cbs = [ModelCheckpoint()]
-m.fit(x, y, epochs=10, batch_size=batch_size, verbose=1, callbacks=cbs)
+m.fit(x, y, epochs=10000, batch_size=batch_size, verbose=1, callbacks=cbs)
 
 # path = paths.create_model_path()
 # print('Saving', path)

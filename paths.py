@@ -46,14 +46,14 @@ def get_model_name_list():
     ]
     return l
 
-def create_model_name():
+def create_model_name(epoch, loss, acc):
     t = pytz.utc.localize(datetime.datetime.now()).astimezone(pytz.timezone('Europe/Paris'))
     t = t.strftime(time_format)
     name = names.get_last_name().lower()
-    return '{}_{}'.format(t, name)
+    return '{}_{:04d}_{:08.6f}_{:08.6f}_{}'.format(t, epoch, loss, acc, name)
 
-def create_model_path():
-    return os.path.join(prefix, 'models', create_model_name() + '.hdf5')
+def create_model_path(epoch, loss, acc):
+    return os.path.join(prefix, 'models', create_model_name(epoch, loss, acc) + '.hdf5')
 
 def get_latest_model_path_opt():
     def _epoch_of_model_name(name):
