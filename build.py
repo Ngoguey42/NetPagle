@@ -16,13 +16,14 @@ print('Snaped!')
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import RectangleSelector
-# from pylab import *
 from scipy import misc
 import os
+import sys
 import pytz
 import datetime
 import names
 import skimage.segmentation
+import string
 
 import paths
 
@@ -37,7 +38,6 @@ class Segmentozor(object):
         x = int(x)
         y = int(y)
         if self._input[y, x] != 0:
-            print('remove_at', x, y)
             if self._count >= 3:
                 self.dirty = True
             self._count -= 1
@@ -47,7 +47,6 @@ class Segmentozor(object):
         x = int(x)
         y = int(y)
         if self._input[y, x] != 1:
-            print('add_fg', x, y)
             if self._count >= 2:
                 self.dirty = True
             self._count += 1
@@ -57,7 +56,6 @@ class Segmentozor(object):
         x = int(x)
         y = int(y)
         if self._input[y, x] != 2:
-            print('add_bg', x, y)
             if self._count >= 2:
                 self.dirty = True
             self._count += 1
@@ -109,7 +107,6 @@ class DraggableRectangle:
         )
 
     def draw_callback(self, event):
-        print('draw_callback', self._redraw)
         if self._redraw:
             labels = self.seg.build_image()
             imgmask = labels == 1
@@ -129,7 +126,6 @@ class DraggableRectangle:
 
     def key_press_callback(self, event):
         if event.key=='e':
-            print('key_press_callback')
             self._redraw = True
             self.rect.figure.canvas.draw()
 
@@ -139,7 +135,6 @@ class DraggableRectangle:
             return
         if event.xdata is None:
             return
-        print('on_press', event.button)
         if event.button in {1, 2, 3}:
             self._pressed += [event.button]
             x, y = event.xdata + 0.5, event.ydata + 0.5
@@ -152,7 +147,6 @@ class DraggableRectangle:
 
     def on_release(self, event):
         'on release we reset the press data'
-        print('on_release')
         if event.button in {1, 2, 3}:
             self._pressed = [
                 k
@@ -166,7 +160,6 @@ class DraggableRectangle:
             return
         for k in self._pressed[::-1]:
             x, y = event.xdata + 0.5, event.ydata + 0.5
-            print('motion', x, y)
             if k == 1:
                 self.seg.add_fg(x, y)
             elif k == 3:
@@ -184,7 +177,7 @@ class DraggableRectangle:
         self.rect.figure.canvas.mpl_disconnect(self.cidrelease)
         self.rect.figure.canvas.mpl_disconnect(self.cidmotion)
 
-def mask_of_img(img):
+def mask_of_img(img, name):
     seg = Segmentozor(img)
     fig = plt.figure(figsize=(16, 16 / 16 * 9))
 
@@ -196,6 +189,7 @@ def mask_of_img(img):
     for i, img in enumerate(imgs):
         if i == 0:
             a = fig.add_subplot(1, 2, i + 1)
+            a.set_title(name)
         else:
             a = fig.add_subplot(1, 2, i + 1, sharex=axes[0], sharey=axes[0])
         axes.append(a)
@@ -215,13 +209,27 @@ def mask_of_img(img):
 
 img = np.asarray(i)
 print('img', img.shape)
-mask = mask_of_img(img)
-print('mask {!r} {:%}'.format(mask.shape, mask.mean()))
+for i in range(3):
+    print("  channel {}: mean:{}".format(i, img[..., i].mean()))
 
-name = paths.create_name()
+tags = [
+    ''.join(
+        c
+        for c in s.lower()
+        if c in string.ascii_lowercase
+    )
+    for s in sys.argv[1:]
+]
+
+name = paths.create_name(tags)
 print(name)
 path_img = paths.img_path_of_name(name)
 path_mask = paths.mask_path_of_name(name)
+
+
+mask = mask_of_img(img, name)
+print('mask {!r} {:%}'.format(mask.shape, mask.mean()))
+
 
 misc.imsave(path_img, img)
 misc.imsave(path_mask, mask)

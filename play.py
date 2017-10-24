@@ -46,4 +46,6 @@ def show_prediction_of_name(name):
 
 names = paths.create_names_list()
 for name in names:
+    # if 'philip' not in name:
+        # continue
     show_prediction_of_name(name)

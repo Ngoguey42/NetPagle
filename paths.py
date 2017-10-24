@@ -9,14 +9,12 @@ from constants import *
 
 def create_names_list():
     set1 = {
-        # os.path.join(prefix, 'img', fname)
         fname[:-4]
         for fname in  os.listdir(os.path.join(prefix, 'img'))
-        if fname.endswith('.jpg')
+        if fname.endswith('.png')
     }
     set2 = {
         fname[:-4]
-        # os.path.join(prefix, 'mask', fname)
         for fname in  os.listdir(os.path.join(prefix, 'mask'))
         if fname.endswith('.png')
     }
@@ -27,15 +25,13 @@ def mask_path_of_name(name):
     return os.path.join(prefix, 'mask', name + '.png')
 
 def img_path_of_name(name):
-    return os.path.join(prefix, 'img', name  + '.jpg')
+    return os.path.join(prefix, 'img', name  + '.png')
 
-time_format = '%y-%m-%d-%H-%M-%S'
-
-def create_name():
+def create_name(tags=()):
     t = pytz.utc.localize(datetime.datetime.now()).astimezone(pytz.timezone('Europe/Paris'))
     t = t.strftime(time_format)
     name = names.get_first_name().lower()
-    return '{}_{}'.format(t, name)
+    return '{}_{}_{}'.format(t, '-'.join(tags), name)
 
 def get_model_name_list():
     l = [fname[:-5]
@@ -69,7 +65,7 @@ def get_latest_model_path_opt():
 def img_of_name(name):
     shapes = []
 
-    path = os.path.join(prefix, 'img', name + '.jpg')
+    path = os.path.join(prefix, 'img', name + '.png')
     arr = ndi.imread(path).astype('uint8')
     shapes.append(str(arr.shape))
 
