@@ -7,8 +7,6 @@ import numpy as np
 
 from constants import *
 
-prefix = 'C:/Users/Ngo/Desktop/fishdb'
-
 def create_names_list():
     set1 = {
         # os.path.join(prefix, 'img', fname)

@@ -18,3 +18,6 @@ img_d = 3
 n_labels = 2
 
 kernel = 3
+
+# prefix = 'C:/Users/Ngo/Desktop/fishdb'
+prefix = '/media/ngoguey/Donnees/ngoguey/fishbd'
