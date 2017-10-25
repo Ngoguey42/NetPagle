@@ -19,7 +19,7 @@ n_labels = 2
 
 kernel = 3
 
-prefix = 'C:/Users/Ngo/Desktop/fishdb'
+prefix = 'C:/Users/Ngo/Desktop/fishdb/current'
 # prefix = '/media/ngoguey/Donnees/ngoguey/fishbd'
 
 time_format = '%y-%m-%d-%H-%M-%S'

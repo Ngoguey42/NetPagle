@@ -4,6 +4,7 @@ from keras.layers.core import Activation, Reshape, Permute
 from keras.layers.convolutional import Convolution2D, MaxPooling2D, UpSampling2D
 from keras.layers.normalization import BatchNormalization
 from keras.optimizers import SGD
+import tensorflow as tf
 import numpy as np
 
 from keras import backend as K
@@ -12,22 +13,29 @@ K.set_image_dim_ordering('th')
 import paths
 from constants import *
 
+
+c = tf.ConfigProto()
+c.gpu_options.allow_growth = True
+sess = tf.Session(config=c)
+keras.backend.tensorflow_backend.set_session(sess)
+
+
 encoding_layers = [
     Convolution2D(64, (kernel, kernel), padding='same', input_shape=(img_d, img_h, img_w)),
     # BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(64, (kernel, kernel), padding='same'),
+    # Activation('relu'),
+    # Convolution2D(64, (kernel, kernel), padding='same'),
     # BatchNormalization(),
     Activation('relu'),
     MaxPooling2D(pool_size=(2, 2)),
 
-    Convolution2D(128, (kernel, kernel), padding='same'),
+    # Convolution2D(128, (kernel, kernel), padding='same'),
     # BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(128, (kernel, kernel), padding='same'),
+    # Activation('relu'),
+    # Convolution2D(128, (kernel, kernel), padding='same'),
     # BatchNormalization(),
-    Activation('relu'),
-    MaxPooling2D(pool_size=(2, 2)),
+    # Activation('relu'),
+    # MaxPooling2D(pool_size=(2, 2)),
 
     # Convolution2D(256, (kernel, kernel), padding='same'),
     # BatchNormalization(),
@@ -97,13 +105,13 @@ decoding_layers = [
     # BatchNormalization(),
     # Activation('relu'),
 
-    UpSampling2D(),
-    Convolution2D(128, (kernel, kernel), padding='same'),
+    # UpSampling2D(),
+    # Convolution2D(128, (kernel, kernel), padding='same'),
     # BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(64, (kernel, kernel), padding='same'),
+    # Activation('relu'),
+    # Convolution2D(64, (kernel, kernel), padding='same'),
     # BatchNormalization(),
-    Activation('relu'),
+    # Activation('relu'),
 
     UpSampling2D(),
     Convolution2D(64, (kernel, kernel), padding='same'),

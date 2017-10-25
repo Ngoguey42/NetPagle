@@ -1,14 +1,11 @@
-from keras import models
 import numpy as np
 import matplotlib.pyplot as plt
+# from keras import models
+import keras
+import tensorflow as tf
 
 import paths
 from constants import *
-
-model_path = paths.get_latest_model_path_opt()
-assert model_path is not None
-print('Loading model:', model_path)
-m = models.load_model(model_path)
 
 def show_prediction_of_name(name):
     img = paths.img_of_name(name)
@@ -44,8 +41,20 @@ def show_prediction_of_name(name):
         a.set_title(title)
     plt.show()
 
+
+c = tf.ConfigProto()
+c.gpu_options.allow_growth = True
+sess = tf.Session(config=c)
+keras.backend.tensorflow_backend.set_session(sess)
+
+model_path = paths.get_latest_model_path_opt()
+assert model_path is not None
+print('Loading model:', model_path)
+m = keras.models.load_model(model_path)
+
+
 names = paths.create_names_list()
 for name in names:
-    # if 'philip' not in name:
+    # if 'tamara' not in name:
         # continue
     show_prediction_of_name(name)
