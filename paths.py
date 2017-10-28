@@ -72,8 +72,8 @@ def img_of_name(name):
     arr = ndi.zoom(arr, (img_h / 1080, img_w / 1920, 1))
     shapes.append(str(arr.shape))
 
-    arr = np.moveaxis(arr, 2, 0)
-    shapes.append(str(arr.shape))
+    # arr = np.moveaxis(arr, 2, 0)
+    # shapes.append(str(arr.shape))
 
     print("Read img  {}, shapes:{}".format(
         name, ' -> '.join(shapes)
@@ -91,8 +91,8 @@ def mask_of_name(name):
     shapes.append(str(arr.shape))
 
     arr = arr.astype('bool')
-    arr = arr[..., np.newaxis]
-    shapes.append(str(arr.shape))
+    # arr = arr[..., np.newaxis]
+    # shapes.append(str(arr.shape))
 
     print("Read mask {}, shapes:{}".format(
         name, ' -> '.join(shapes)

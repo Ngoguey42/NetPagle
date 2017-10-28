@@ -1,17 +1,12 @@
-# import PIL.ImageGrab as pig
-
 print('Snap!')
-# i = pig.grab()
-
 import mss
 import numpy as np
-import matplotlib.pyplot as plt
 
 with mss.mss() as sct:
     monitor = sct.monitors[1]
     i = sct.grab(monitor)
+    print('Snaped!')
     i = np.asarray(i)[:, :, [2, 1, 0]]
-print('Snaped!')
 
 import numpy as np
 import matplotlib.pyplot as plt

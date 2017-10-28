@@ -11,20 +11,21 @@ def show_prediction_of_name(name):
     img = paths.img_of_name(name)
     print('predicting', name)
     pred = m.predict(img[np.newaxis, ...])
-    pred = pred[..., 0].reshape(img_h, img_w)
+    print(pred.shape)
+    pred = pred[0]
     print(f'pred min{pred.min()} max{pred.max()} mean{pred.mean()}')
     # perc99 = np.percentile(pred, 99)
     # pred = pred.clip(0, perc99)
     # print(f'pred min{pred.min()} max{pred.max()} mean{pred.mean()}')
-    pred = 1 - pred
-    print(f'pred min{pred.min()} max{pred.max()} mean{pred.mean()}')
+    # pred = 1 - pred
+    # print(f'pred min{pred.min()} max{pred.max()} mean{pred.mean()}')
     pred = (pred - pred.min()) / pred.ptp()
     print(f'pred min{pred.min()} max{pred.max()} mean{pred.mean()}')
     print("showing {}'s heatmap".format(name))
     fig = plt.figure(figsize=(13, 13 / 16 * 9))
     mask = paths.mask_of_name(name).reshape(img_h, img_w)
     # mask = _mask_of_name(name)[..., 0]
-    img = np.moveaxis(img, 0, 2)
+    # img = np.moveaxis(img, 0, 2)
     img2 = img.copy()
     img2[mask] = (img2[mask] * 1.8).clip(0, 255).astype('uint8')
     img2[~mask] = (img2[~mask] / 1.8).clip(0, 255).astype('uint8')
@@ -55,6 +56,6 @@ m = keras.models.load_model(model_path)
 
 names = paths.create_names_list()
 for name in names:
-    # if '17-10-28-19' not in name:
-        # continue
+    if 'honor' not in name:
+        continue
     show_prediction_of_name(name)
