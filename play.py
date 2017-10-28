@@ -55,6 +55,6 @@ m = keras.models.load_model(model_path)
 
 names = paths.create_names_list()
 for name in names:
-    # if 'tamara' not in name:
+    # if '17-10-28-19' not in name:
         # continue
     show_prediction_of_name(name)

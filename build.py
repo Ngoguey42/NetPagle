@@ -216,13 +216,13 @@ tags = [
     ''.join(
         c
         for c in s.lower()
-        if c in string.ascii_lowercase
+        if c in string.ascii_lowercase + '-' + '0123456789'
     )
     for s in sys.argv[1:]
 ]
 
 name = paths.create_name(tags)
-print(name)
+print(sys.argv[1:], tags, name)
 path_img = paths.img_path_of_name(name)
 path_mask = paths.mask_path_of_name(name)
 
