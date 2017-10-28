@@ -107,37 +107,23 @@ decoding_layers = [
 ]
 layers = [
     # part 1
-    Convolution2D(8, (kernel, kernel), padding='same', input_shape=(img_h, img_w, img_d)),
-    Activation('relu'),
-    Convolution2D(8, (kernel, kernel), padding='same'),
-    Activation('relu'),
-
-    MaxPooling2D(pool_size=(2, 2)),
-
-    Convolution2D(32, (kernel, kernel), padding='same'),
+    Convolution2D(32, (kernel, kernel), padding='same', input_shape=(img_h, img_w, img_d)),
     Activation('relu'),
     Convolution2D(32, (kernel, kernel), padding='same'),
     Activation('relu'),
 
-    MaxPooling2D(pool_size=(2, 2)),
+    MaxPooling2D((4, 4)),
 
-    Convolution2D(64, (kernel, kernel), padding='same'),
+    Convolution2D(128, (kernel, kernel), padding='same'),
     Activation('relu'),
-    Convolution2D(64, (kernel, kernel), padding='same'),
+    Convolution2D(128, (kernel, kernel), padding='same'),
     Activation('relu'),
 
-    UpSampling2D(),
+    UpSampling2D((4, 4)),
 
     Convolution2D(32, (kernel, kernel), padding='same'),
     Activation('relu'),
     Convolution2D(32, (kernel, kernel), padding='same'),
-    Activation('relu'),
-
-    UpSampling2D(),
-
-    Convolution2D(8, (kernel, kernel), padding='same'),
-    Activation('relu'),
-    Convolution2D(8, (kernel, kernel), padding='same'),
     Activation('relu'),
 
     # part 3

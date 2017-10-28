@@ -1,3 +1,4 @@
+import os
 
 """
 widths = [i for i in range(64, 1921, 64)]
@@ -42,5 +43,7 @@ kernel = 3
 
 prefix = 'C:/Users/Ngo/Desktop/fishdb/current'
 # prefix = '/media/ngoguey/Donnees/ngoguey/fishbd'
+
+info_path = os.path.join(prefix, 'models', 'info.yml')
 
 time_format = '%y-%m-%d-%H-%M-%S'

@@ -1,3 +1,5 @@
+import yaml
+
 import numpy as np
 import matplotlib.pyplot as plt
 # from keras import models
@@ -55,7 +57,12 @@ m = keras.models.load_model(model_path)
 
 
 names = paths.create_names_list()
-for name in names:
-    if 'honor' not in name:
-        continue
+test_names = yaml.load(open(info_path, 'r'))['test_names']
+train_names = [name for name in paths.create_names_list() if name not in test_names]
+
+# for name in names:
+# for name in train_names:
+for name in test_names:
+    # if 'honor' not in name:
+    #     continue
     show_prediction_of_name(name)
