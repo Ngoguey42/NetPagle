@@ -35,7 +35,7 @@ from constants import *
 
 import keras
 import tensorflow as tf
-import model
+import keras_model as model
 
 
 c = tf.ConfigProto()
@@ -67,43 +67,45 @@ m.summary()
 train_names = [name for name in paths.create_names_list() if name not in test_names]
 train_names = sorted(train_names)
 print("{} train_names, {} test_names".format(len(train_names), len(test_names)))
-pprint(sorted(test_names))
+# pprint(sorted(test_names))
 
-train_names = train_names
 
 
 from prio_thread_pool import PrioThreadPool
 
+def load_images():
+    rasters = []
+    def work(name):
+        nonlocal rasters
+        rasters.append(
+            (paths.img_of_name(name), paths.mask_of_name(name))
+        )
+    PrioThreadPool(-1).iter(0, work, train_names)
+    xtrain = np.stack([tup[0] for tup in rasters]).astype('uint8')
+    ytrain = np.stack([tup[1] for tup in rasters]).astype('bool')
+
+    rasters = []
+    def work(name):
+        nonlocal rasters
+        rasters.append(
+            (paths.img_of_name(name), paths.mask_of_name(name))
+        )
+    PrioThreadPool(-1).iter(0, work, test_names)
+    xtest = np.stack([tup[0] for tup in rasters]).astype('uint8')
+    ytest = np.stack([tup[1] for tup in rasters]).astype('bool')
+
+    return xtrain, ytrain, xtest, ytest
 
 
-# imgs = []
-# masks = []
-rasters = []
+xtrain, ytrain, xtest, ytest = load_images()
 
-def work(name):
-    global rasters
-    rasters.append(
-        (paths.img_of_name(name), paths.mask_of_name(name))
-    )
-
-PrioThreadPool(-1).iter(0, work, train_names)
-
-x = [tup[0] for tup in rasters]
-y = [tup[1] for tup in rasters]
-del rasters
-
-x = np.stack(x)
-y = np.stack(y)
-print('xy shapes   ', x.shape, y.shape)
-print("Input data: xshape:{}, xsize:{}GB, yshape:{}, ymean{:%}".format(
-    x.shape, x.size / 1024 ** 3,
-    y.shape, y.mean(),
+print("xtrain:{} ytrain:{} xtest:{} ytest:{}".format(
+    xtrain.shape, ytrain.shape, xtest.shape, ytest.shape
 ))
-
-x = x.astype('uint8')
-y = y.astype(bool)
-
-
+print("total-size:{}MB ytrain-mean:{:%}".format(
+    (xtrain.size + ytrain.size + xtest.size + ytest.size) * 1 / 1024 ** 2,
+    ytrain.mean(),
+))
 
 class ModelCheckpoint(keras.callbacks.Callback):
     def __init__(self):
@@ -128,5 +130,5 @@ class ModelCheckpoint(keras.callbacks.Callback):
 
 print('Fiting')
 # exit()
-cbs = [ModelCheckpoint()]
-m.fit(x, y, epochs=10000, batch_size=1, verbose=1, callbacks=cbs)
+# cbs = [ModelCheckpoint()]
+# m.fit(xtrain, ytrain, epochs=10000, batch_size=1, verbose=1, callbacks=cbs)

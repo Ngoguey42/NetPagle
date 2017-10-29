@@ -1,148 +1,50 @@
-import keras
-from keras.layers.core import Activation, Reshape, Permute
-from keras.layers.convolutional import Convolution2D, MaxPooling2D, UpSampling2D
-from keras.layers.normalization import BatchNormalization
 
-from constants import *
 
-encoding_layers = [
-    Convolution2D(8, (kernel, kernel), padding='same', input_shape=(img_h, img_w, img_d)),
-    # BatchNormalization(),
-    # Activation('relu'),
-    # Convolution2D(64, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    Activation('relu'),
-    MaxPooling2D(pool_size=(2, 2)),
 
-    # Convolution2D(128, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
-    # Convolution2D(128, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
-    # MaxPooling2D(pool_size=(2, 2)),
+class Model(object):
+    """
+    model name: time_epoch_lr_loss_accuracy_testaccuracy_lastname
+    """
 
-    # Convolution2D(256, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
-    # Convolution2D(256, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
-    # Convolution2D(256, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
-    # MaxPooling2D(pool_size=(2, 2)),
+    def __init__(self, directory):
+        self.epoch_count = ...
+        self.accuracies = ...
+        self.losses = ...
 
-    # Convolution2D(512, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
-    # Convolution2D(512, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
-    # Convolution2D(512, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
-    # MaxPooling2D(pool_size=(2, 2)),
+        self.names_train = ...
+        self.names_test = ...
 
-    # Convolution2D(512, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
-    # Convolution2D(512, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
-    # Convolution2D(512, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
-    # MaxPooling2D(pool_size=(2, 2)),
-]
 
-decoding_layers = [
-    # UpSampling2D(),
-    # Convolution2D(512, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
-    # Convolution2D(512, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
-    # Convolution2D(512, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
 
-    # UpSampling2D(),
-    # Convolution2D(512, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
-    # Convolution2D(512, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
-    # Convolution2D(256, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
+        pass
 
-    # UpSampling2D(),
-    # Convolution2D(256, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
-    # Convolution2D(256, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
-    # Convolution2D(128, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
+    def from_scratch(self, directory):
+        pass
 
-    # UpSampling2D(),
-    # Convolution2D(128, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
-    # Convolution2D(64, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    # Activation('relu'),
+    def from_directory(self, directory):
+        pass
 
-    UpSampling2D(),
-    Convolution2D(64, (kernel, kernel), padding='same'),
-    # BatchNormalization(),
-    Activation('relu'),
-    Convolution2D(n_labels, (1, 1), padding='valid'),
-    # BatchNormalization(),
-]
-layers = [
-    # part 1
-    Convolution2D(32, (kernel, kernel), padding='same', input_shape=(img_h, img_w, img_d)),
-    Activation('relu'),
-    Convolution2D(32, (kernel, kernel), padding='same'),
-    Activation('relu'),
 
-    MaxPooling2D((4, 4)),
 
-    Convolution2D(128, (kernel, kernel), padding='same'),
-    Activation('relu'),
-    Convolution2D(128, (kernel, kernel), padding='same'),
-    Activation('relu'),
+    @property
+    def xtrain(self):
+        pass
 
-    UpSampling2D((4, 4)),
+    @property
+    def ytrain(self):
+        pass
 
-    Convolution2D(32, (kernel, kernel), padding='same'),
-    Activation('relu'),
-    Convolution2D(32, (kernel, kernel), padding='same'),
-    Activation('relu'),
+    @property
+    def xtest(self):
+        pass
 
-    # part 3
-    Convolution2D(n_labels, (1, 1), padding='valid'),
-    Reshape((img_h, img_w)),
-    # Permute((2, 3, 1))
-    Activation('softmax')
-]
+    @property
+    def ytest(self):
+        pass
 
-def _create_model():
-    autoencoder = keras.models.Sequential()
-    # autoencoder.encoding_layers = encoding_layers
-    # for l in autoencoder.encoding_layers:
-    #     autoencoder.add(l)
-    # autoencoder.decoding_layers = decoding_layers
-    # for l in autoencoder.decoding_layers:
-    #     autoencoder.add(l)
-    for l in layers:
-        autoencoder.add(l)
-    autoencoder.compile(loss="binary_crossentropy", optimizer='adadelta', metrics=['accuracy'])
-    # autoencoder.compile(loss="sparse_categorical_crossentropy", optimizer='adadelta', metrics=['accuracy'])
-    return autoencoder
+
+    def eval_heatmap(self, y, ypred)
+
+    def eval_model(self):
+
+        ypredtest = self.km.predict(self.xtest, 1, 1)

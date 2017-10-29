@@ -60,6 +60,26 @@ names = paths.create_names_list()
 test_names = yaml.load(open(info_path, 'r'))['test_names']
 train_names = [name for name in paths.create_names_list() if name not in test_names]
 
+
+rasters = []
+
+def work(name):
+    global rasters
+    rasters.append(
+        (paths.img_of_name(name), paths.mask_of_name(name))
+    )
+
+PrioThreadPool(-1).iter(0, work, test_names)
+
+xtest = [tup[0] for tup in rasters]
+ytest = [tup[1] for tup in rasters]
+del rasters
+
+print('a')
+
+print('b')
+
+
 # for name in names:
 # for name in train_names:
 for name in test_names:

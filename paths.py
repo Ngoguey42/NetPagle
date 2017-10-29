@@ -44,7 +44,7 @@ def create_model_name(epoch, loss, acc):
     t = pytz.utc.localize(datetime.datetime.now()).astimezone(pytz.timezone('Europe/Paris'))
     t = t.strftime(time_format)
     name = names.get_last_name().lower()
-    return '{}_{:04d}_{:08.6f}_{:08.6f}_{}'.format(t, epoch, loss, acc, name)
+    return '{}_{:04d}_{:010.8f}_{:010.8f}_{}'.format(t, epoch, loss, acc, name)
 
 def create_model_path(epoch, loss, acc):
     return os.path.join(prefix, 'models', create_model_name(epoch, loss, acc) + '.hdf5')
@@ -87,6 +87,7 @@ def mask_of_name(name):
     arr = ndi.imread(path)
     shapes.append(str(arr.shape))
 
+    # print('arrshape', arr.shape)
     arr = ndi.zoom(arr, (img_h / 1080, img_w / 1920), order=1)
     shapes.append(str(arr.shape))
 
