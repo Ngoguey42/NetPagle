@@ -15,4 +15,5 @@ keras.backend.tensorflow_backend.set_session(sess)
 
 ds = data_source.DataSource(PREFIX)
 m = model.Model(os.path.join(PREFIX, sys.argv[1]), ds)
+
 m.fit()

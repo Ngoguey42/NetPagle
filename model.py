@@ -46,6 +46,7 @@ class Model(object):
             self.epoch_count = self.read_epoch_count()
             print('  {} epochs'.format(self.epoch_count))
 
+        self.lrs = np.full([self.epoch_count], np.nan)
         self.losses = np.full([self.epoch_count], np.nan)
         self.accs = np.full([self.epoch_count], np.nan)
         self.acctrains = np.full([self.epoch_count], np.nan)
@@ -56,6 +57,7 @@ class Model(object):
             time, epoch, lr, loss, acc, trainacc, testacc, lastname = model_info
             epoch = int(epoch)
             lr = float(lr)
+            self.lrs[epoch] = float(lr)
             self.losses[epoch] = float(loss)
             self.accs[epoch] = float(acc)
             self.acctrains[epoch] = float(trainacc)
@@ -145,7 +147,8 @@ class Model(object):
             callbacks=[
                 keras.callbacks.LambdaCallback(on_epoch_end=self.on_epoch_end),
                 keras.callbacks.ReduceLROnPlateau(
-                    'loss', patience=10, verbose=True, cooldown=3,
+
+                    'loss', factor=1/2, patience=100, verbose=True, cooldown=5,
                 ),
             ],
         )

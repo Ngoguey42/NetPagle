@@ -6,6 +6,7 @@ import numpy as np
 from scipy import ndimage
 
 from prio_thread_pool import PrioThreadPool
+from constants import *
 
 def centroids_of_heatmap(hm):
     """
@@ -23,29 +24,32 @@ def centroids_of_heatmap(hm):
     """
     hm = hm >= skimage.filters.threshold_otsu(hm, 256)
 
-    hm = skimage.morphology.binary_closing(hm, skimage.morphology.disk(3)) # hyperparameter(s)
+    kernel_size = max(1, np.rint(6 * WIDTH_RATIO_ORIGIN)) # hyperparameter(s)
+    hm = skimage.morphology.binary_closing(hm, skimage.morphology.disk(kernel_size))
 
-    border = 75 # hyperparameter(s)
+    border = int(141 * WIDTH_RATIO_ORIGIN) # hyperparameter(s)
     mask = np.pad(np.ones(hm.shape - np.int_(border * 2)), border, 'constant', constant_values=0)
     hm = hm & mask.astype(bool)
 
     def _prop_ok(prop):
-        if not 60 < prop.area < 1350: # hyperparameter(s)
+        if not 211 * AREA_RATIO_ORIGIN < prop.area < 4746 * AREA_RATIO_ORIGIN: # hyperparameter(s)
             return False
         ma, mi = prop.major_axis_length, prop.minor_axis_length
         ratio = ma / mi
         # print("label {:03d}: area:{}, ratio:{}".format(prop.label, prop.area, ratio))
-        if not 1.5 < ratio < 3.4: # hyperparameter(s)
+        if not 1.5 < ratio < 3.5: # hyperparameter(s)
             return False
         return True
 
     lbl, nlbl = ndimage.label(hm)
-    lbls = np.arange(1, nlbl+1)
     props = skimage.measure.regionprops(lbl)
     props = [prop for prop in props if _prop_ok(prop)]
-    hm = np.isin(lbl, [prop.label for prop in props])
-    # plt.imshow(lbl); plt.show()
-    # plt.imshow(hm); plt.show()
+
+    # if len(props) == 0:
+    #     lbls = np.arange(1, nlbl+1)
+    #     hm = np.isin(lbl, [prop.label for prop in props])
+    #     plt.imshow(lbl); plt.show()
+    #     plt.imshow(hm); plt.show()
     return [prop.centroid for prop in props]
 
 def accuracy(truths, preds):
@@ -68,7 +72,8 @@ def accuracy(truths, preds):
         truth = truths[i]
         pred = preds[i]
 
-        truth = skimage.morphology.binary_closing(truth, skimage.morphology.disk(4))
+        kernel_size = max(1, np.rint(7 * WIDTH_RATIO_ORIGIN))
+        truth = skimage.morphology.binary_closing(truth, skimage.morphology.disk(kernel_size))
         truthprops = skimage.measure.regionprops(
             ndimage.label(truth, np.ones((3, 3)))[0]
         )
@@ -90,7 +95,7 @@ def accuracy(truths, preds):
                 success += 1
                 break
 
-    PrioThreadPool(-1).iter(0, work, range(len(truths)))
-    # for i in range(len(truths)):
-        # work(i)
+    # PrioThreadPool(-1).iter(0, work, range(len(truths)))
+    for i in range(len(truths)):
+        work(i)
     return success / len(truths)

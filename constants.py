@@ -31,11 +31,17 @@ combos = [(x, y) for (x, y) in combos if -0.20 < x/y / (16/9) - 1 < 0.20]
 
 # img_w = 64
 # img_h = 64
-img_w = 1024
-img_h = 576
-# img_w = 576
-# img_h = 320
+# img_w = 1024
+# img_h = 576
+img_w = 704
+img_h = 384
 img_d = 3
+
+WIDTH = img_w
+HEIGHT = img_h
+AREA = WIDTH * HEIGHT
+AREA_RATIO_ORIGIN = AREA / (1920 * 1080)
+WIDTH_RATIO_ORIGIN = WIDTH / 1920
 
 n_labels = 1
 
