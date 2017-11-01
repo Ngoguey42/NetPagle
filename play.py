@@ -1,88 +1,97 @@
-import yaml
+import sys
 
 import numpy as np
 import matplotlib.pyplot as plt
-# from keras import models
 import keras
 import tensorflow as tf
+import descartes
+import shapely.geometry as sg
 
 import paths
 from constants import *
+import accuracy
+import data_source
+import model
 
-def show_prediction_of_name(name):
-    img = paths.img_of_name(name)
-    print('predicting', name)
-    pred = m.predict(img[np.newaxis, ...])
-    print(pred.shape)
-    pred = pred[0]
-    print(f'pred min{pred.min()} max{pred.max()} mean{pred.mean()}')
-    # perc99 = np.percentile(pred, 99)
-    # pred = pred.clip(0, perc99)
-    # print(f'pred min{pred.min()} max{pred.max()} mean{pred.mean()}')
-    # pred = 1 - pred
-    # print(f'pred min{pred.min()} max{pred.max()} mean{pred.mean()}')
-    pred = (pred - pred.min()) / pred.ptp()
-    print(f'pred min{pred.min()} max{pred.max()} mean{pred.mean()}')
-    print("showing {}'s heatmap".format(name))
+def show_many_images(imgs, tags, patchess):
+    count = len(imgs)
+    assert len(imgs) == len(tags) == len(patchess)
+
+    if count == 1: w, h = 1, 1
+    elif count == 2: w, h = 2, 1
+    elif count in {3, 4}: w, h = 2, 2
+    elif count in {5, 6}: w, h = 3, 2
+    elif count in {7, 8, 9}: w, h = 3, 3
+    else: assert False
+
     fig = plt.figure(figsize=(13, 13 / 16 * 9))
-    mask = paths.mask_of_name(name).reshape(img_h, img_w)
-    # mask = _mask_of_name(name)[..., 0]
-    # img = np.moveaxis(img, 0, 2)
-    img2 = img.copy()
-    img2[mask] = (img2[mask] * 1.8).clip(0, 255).astype('uint8')
-    img2[~mask] = (img2[~mask] / 1.8).clip(0, 255).astype('uint8')
-    imgs = [pred, mask, img, img2]
-    tags = ['heat map', 'input Y', 'input X', 'input X and Y']
-    a1 = None
-    for i, (arr, title) in enumerate(zip(imgs, tags)):
+    for i, img, title, patches in zip(range(count), imgs, tags, patchess):
         if i == 0:
-            a = fig.add_subplot(2, 2, i + 1)
-            a1 = a
+            a = fig.add_subplot(h, w, i + 1)
+            a0 = a
         else:
-            a = fig.add_subplot(2, 2, i + 1, sharex=a1, sharey=a1)
-        imgplot = plt.imshow(arr)
+            a = fig.add_subplot(h, w, i + 1, sharex=a0, sharey=a0)
+        plt.imshow(img)
         a.set_title(title)
+        for patch in patches:
+            a.add_patch(patch)
     plt.show()
 
+def show_prediction(name, x, y):
+    print("Predicting {}".format(name), x.shape, y.shape)
+    hm = m.m.predict(np.asarray([x]), 1, True)[0]
+    print(f'heat-map min{hm.min()} max{hm.max()} mean{hm.mean()}')
+
+    hm = accuracy.Heatmap(hm)
+    centroids = [np.flipud(cen) for cen in hm.centroids_yx]
+    print(f'{len(centroids)} centroids -> {centroids}')
+
+
+    imgs = [y, x] + [img for (img, _) in hm.images]
+    patchess = [()] * len(imgs)
+    patchess[-1] = (
+        # [descartes.PolygonPatch(sg.Point(cen).buffer(2), alpha=1., zorder=2, fc='white')
+        #  for cen in centroids] +
+        [descartes.PolygonPatch(sg.Point(cen).buffer(15), alpha=0.4, zorder=1, fc='white', ec='red', lw=2)
+         for cen in centroids]
+    )
+    tags = ['x', 'y'] + [title for (_, title) in hm.images]
+    show_many_images(
+        imgs, tags, patchess,
+    )
 
 c = tf.ConfigProto()
 c.gpu_options.allow_growth = True
 sess = tf.Session(config=c)
 keras.backend.tensorflow_backend.set_session(sess)
 
-model_path = paths.get_latest_model_path_opt()
-assert model_path is not None
-print('Loading model:', model_path)
-m = keras.models.load_model(model_path)
+ds = data_source.DataSource(PREFIX)
+m = model.Model(os.path.join(PREFIX, sys.argv[1]), ds)
 
+print(m.eval_accuracies())
 
-names = paths.create_names_list()
-test_names = yaml.load(open(info_path, 'r'))['test_names']
-train_names = [name for name in paths.create_names_list() if name not in test_names]
-
-
-rasters = []
-
-def work(name):
-    global rasters
-    rasters.append(
-        (paths.img_of_name(name), paths.mask_of_name(name))
-    )
-
-PrioThreadPool(-1).iter(0, work, test_names)
-
-xtest = [tup[0] for tup in rasters]
-ytest = [tup[1] for tup in rasters]
-del rasters
-
-print('a')
-
-print('b')
-
-
-# for name in names:
-# for name in train_names:
-for name in test_names:
-    # if 'honor' not in name:
+# exit()
+# for name, x, y, i in zip(ds.names, ds.xtrain, ds.ytrain, range(100000)):
+for i, name in enumerate(TEST_NAMES):
+# for i, name in enumerate([
+# 	'17-10-24-23-10-39_blue-thunderbluff-courtyard-scroll0_marilyn',
+# 	'17-10-24-23-28-52_blue-darnassus-auctionhouse-scroll0_gina',
+# 	'17-10-24-23-36-13_blue-darnassus-temple-scroll0_kelly-occlusion',
+# 	'17-10-28-21-24-48_red-stonetalon-sunrock-scroll10_anna',
+# 	'17-10-27-00-33-08_green-moonglade-river-scroll0_lorraine',
+# 	'17-10-28-19-55-15_black-silverpine-lake-scroll5_norma-occlusion',
+# 	'17-10-28-20-08-44_black-silverpine-bridge-scroll5_steven',
+# ]):
+    # if not ('gina' in name or 'raym' in name):
     #     continue
-    show_prediction_of_name(name)
+
+    print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    print(i, name)
+    x = ds.img_of_name(name)
+    y = ds.mask_of_name(name)
+    show_prediction(name, x, y)
+# for name, x, y, i in zip(ds.names, ds.xtest, ds.ytest, range(100000)):
+#     print(i)
+#     show_prediction(name, x, y)
+    # if i > 2:
+        # break

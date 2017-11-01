@@ -12,6 +12,7 @@ import accuracy
 import paths
 from constants import *
 import keras_model
+import tensorflow as tf
 
 class Model(object):
     """
@@ -94,8 +95,6 @@ class Model(object):
             ))
 
     def create_model_name(self, loss, acc):
-        # time = pytz.utc.localize(datetime.datetime.now())
-        # time = time.astimezone(pytz.timezone('Europe/Paris'))
         t = datetime.datetime.fromtimestamp(time.mktime(time.localtime()))
         t = time.strftime(time_format)
         epoch = self.epoch_count - 1
@@ -146,9 +145,8 @@ class Model(object):
             verbose=1,
             callbacks=[
                 keras.callbacks.LambdaCallback(on_epoch_end=self.on_epoch_end),
-                keras.callbacks.ReduceLROnPlateau(
-
-                    'loss', factor=1/2, patience=100, verbose=True, cooldown=5,
-                ),
+                # keras.callbacks.ReduceLROnPlateau(
+                #     'loss', factor=1/2, patience=100, verbose=True, cooldown=5,
+                # ),
             ],
         )

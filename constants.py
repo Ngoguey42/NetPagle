@@ -29,12 +29,15 @@ combos = [(x, y) for (x, y) in combos if -0.20 < x/y / (16/9) - 1 < 0.20]
  '1024/576 , ratio +0.00%, memsize  28%']
 """
 
-# img_w = 64
-# img_h = 64
 # img_w = 1024
 # img_h = 576
-img_w = 704
-img_h = 384
+
+# img_w = 704
+# img_h = 384
+
+img_w = 448
+img_h = 256
+
 img_d = 3
 
 WIDTH = img_w
@@ -52,7 +55,7 @@ PREFIX = 'C:/Users/Ngo/Desktop/fishdb/current'
 
 time_format = '%y-%m-%d-%H-%M-%S'
 
-TEST_NAMES = [
+TEST_NAMES = sorted([
 	'17-10-28-21-24-48_red-stonetalon-sunrock-scroll10_anna',
 	'17-10-28-21-25-29_red-stonetalon-sunrock-scroll10_shirley',
 	'17-10-28-21-26-08_red-stonetalon-sunrock-scroll10_june',
@@ -73,4 +76,4 @@ TEST_NAMES = [
 	'17-10-24-22-58-40_blue-strangle-bootybay-scroll0_samantha',
 	'17-10-24-23-02-32_green-thunderbluff-poolsofvision-scroll0_alan',
 	'17-10-24-22-45-35_red-orgrimmar-valleyofhonor-scroll0_delores',
-]
+])

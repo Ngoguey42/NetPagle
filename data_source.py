@@ -82,6 +82,7 @@ class DataSource(object):
             self.mask_of_name(name) for name in self.names_test
         ])
 
+    @functools.lru_cache(None)
     def img_of_name(self, name):
         shapes = []
 
@@ -97,6 +98,7 @@ class DataSource(object):
         ))
         return arr
 
+    @functools.lru_cache(None)
     def mask_of_name(self, name):
         shapes = []
 
