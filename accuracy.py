@@ -8,9 +8,11 @@ from scipy import ndimage
 from prio_thread_pool import PrioThreadPool
 from constants import *
 
+_print = print
+
 class Heatmap(object):
 
-    def __init__(self, hm):
+    def __init__(self, hm, verbose=False):
         """
         Steps
         -----
@@ -27,6 +29,12 @@ class Heatmap(object):
         self.hm = hm
         self.images = [(hm, 'heatmap')]
 
+        if not verbose:
+            def _f(*args): pass
+            print = _f
+        else:
+            print = _print
+
         hm = hm >= skimage.filters.threshold_yen(hm, 256)
         self.images.append((hm, 'thresholded (yen algo)'))
 
@@ -38,15 +46,14 @@ class Heatmap(object):
         hm = hm & mask.astype(bool)
 
         def _prop_ok(prop):
-            # print("label {:03d}: area:{}".format(prop.label, prop.area))
+            print("label {:03d}: area:{}".format(prop.label, prop.area))
             if not 211 * AREA_RATIO_ORIGIN < prop.area < 4746 * AREA_RATIO_ORIGIN: # hyperparameter(s)
                 return False
-            ma, mi = prop.major_axis_length, prop.minor_axis_length
-            ratio = ma / mi
+            # ma, mi = prop.major_axis_length, prop.minor_axis_length
+            # ratio = ma / mi
             # print("  ** ratio:{}".format(ratio))
-            # if not 1.5 < ratio < 3.9: # hyperparameter(s)
-            if not 1.5 < ratio < 4.05: # hyperparameter(s)
-                return False
+            # if not 1.5 < ratio < 4.05: # hyperparameter(s)
+                # return False
             return True
 
         lbl, nlbl = ndimage.label(hm, np.ones((3, 3)))

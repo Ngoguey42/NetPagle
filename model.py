@@ -1,11 +1,9 @@
-
 import os
 
 import numpy as np
 import keras
 import names
 import time
-# import pytz
 import datetime
 
 import accuracy
@@ -150,3 +148,24 @@ class Model(object):
                 # ),
             ],
         )
+
+    def show_board(self):
+        import scipy.ndimage as ndi
+        import numpy as np
+        import matplotlib.pyplot as plt
+
+        def _show_accuracy(ys, color, label):
+            label = '{} (max={})'.format(label, ys.max())
+            plt.plot(ys, lw=1, alpha=0.5, ls=':', c=color)
+            plt.plot(ndi.gaussian_filter1d(ys, 3), lw=1, alpha=1, ls='-', c=color, label=label)
+            plt.plot(np.maximum.accumulate(ys), lw=1, alpha=1, ls='--', c=color)
+            plt.plot(np.minimum.accumulate(ys[::-1])[::-1], lw=1, alpha=1, ls='--', c=color)
+
+        _show_accuracy(self.acctrains, 'red', 'Accuracy train set')
+        _show_accuracy(self.acctests, 'green', 'Accuracy test set')
+        plt.plot(self.lrs, lw=1, alpha=1, ls='-', c='orange', label='Learning rate')
+        min_, max_ = np.median(self.losses) - self.losses.std(), np.median(self.losses) + self.losses.std()
+        losses = ((self.losses - min_) /  (max_ - min_)).clip(0, 1)
+        plt.plot(losses, lw=1, alpha=1, ls='-', c='yellow', label='loss')
+        plt.legend()
+        plt.show()

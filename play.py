@@ -42,7 +42,7 @@ def show_prediction(name, x, y):
     hm = m.m.predict(np.asarray([x]), 1, True)[0]
     print(f'heat-map min{hm.min()} max{hm.max()} mean{hm.mean()}')
 
-    hm = accuracy.Heatmap(hm)
+    hm = accuracy.Heatmap(hm, True)
     centroids = [np.flipud(cen) for cen in hm.centroids_yx]
     print(f'{len(centroids)} centroids -> {centroids}')
 
@@ -50,8 +50,6 @@ def show_prediction(name, x, y):
     imgs = [y, x] + [img for (img, _) in hm.images]
     patchess = [()] * len(imgs)
     patchess[-1] = (
-        # [descartes.PolygonPatch(sg.Point(cen).buffer(2), alpha=1., zorder=2, fc='white')
-        #  for cen in centroids] +
         [descartes.PolygonPatch(sg.Point(cen).buffer(15), alpha=0.4, zorder=1, fc='white', ec='red', lw=2)
          for cen in centroids]
     )
@@ -69,7 +67,7 @@ ds = data_source.DataSource(PREFIX)
 m = model.Model(os.path.join(PREFIX, sys.argv[1]), ds)
 
 print(m.eval_accuracies())
-
+# exit()
 # exit()
 # for name, x, y, i in zip(ds.names, ds.xtrain, ds.ytrain, range(100000)):
 for i, name in enumerate(TEST_NAMES):

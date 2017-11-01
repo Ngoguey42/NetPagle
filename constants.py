@@ -1,5 +1,3 @@
-import os
-
 """
 widths = [i for i in range(64, 1921, 64)]
 combos = list(itertools.product(widths, widths))
@@ -55,25 +53,69 @@ PREFIX = 'C:/Users/Ngo/Desktop/fishdb/current'
 
 time_format = '%y-%m-%d-%H-%M-%S'
 
+# TEST_NAMES = sorted([
+# 	'17-10-28-21-24-48_red-stonetalon-sunrock-scroll10_anna',
+# 	'17-10-28-21-25-29_red-stonetalon-sunrock-scroll10_shirley',
+# 	'17-10-28-21-26-08_red-stonetalon-sunrock-scroll10_june',
+# 	'17-10-28-21-27-35_red-stonetalon-sunrock-scroll10_clara-occlusion',
+# 	'17-10-28-21-29-13_red-stonetalon-sunrock-scroll10_jean',
+# 	'17-10-24-23-22-32_blue-darnassus-auctionhouse-scroll0_mildred',
+# 	'17-10-24-23-24-24_blue-darnassus-auctionhouse-scroll0_brett',
+# 	'17-10-24-23-26-01_blue-darnassus-auctionhouse-scroll0_gail',
+# 	'17-10-24-23-27-13_blue-darnassus-auctionhouse-scroll0_mary',
+# 	'17-10-24-23-28-52_blue-darnassus-auctionhouse-scroll0_gina',
+# 	'17-10-28-21-09-56_green-barrens-stagnantoasis-scroll10_lisa',
+# 	'17-10-28-20-09-45_black-silverpine-bridge-scroll5_amparo',
+# 	'17-10-28-20-30-27_black-hillsbrad-cascade-scroll5_richard',
+# 	'17-10-28-20-16-01_black-hillsbrad-tarren-scroll5_robert',
+# 	'17-10-28-19-55-15_black-silverpine-lake-scroll5_norma-occlusion',
+# 	'17-10-27-00-39-54_green-moonglade-river-scroll0_leann',
+# 	'17-10-27-08-56-45_blue-moonglade-tree-scroll0_raymond',
+# 	'17-10-24-22-58-40_blue-strangle-bootybay-scroll0_samantha',
+# 	'17-10-24-23-02-32_green-thunderbluff-poolsofvision-scroll0_alan',
+# 	'17-10-24-22-45-35_red-orgrimmar-valleyofhonor-scroll0_delores',
+# ])
+
 TEST_NAMES = sorted([
-	'17-10-28-21-24-48_red-stonetalon-sunrock-scroll10_anna',
-	'17-10-28-21-25-29_red-stonetalon-sunrock-scroll10_shirley',
-	'17-10-28-21-26-08_red-stonetalon-sunrock-scroll10_june',
-	'17-10-28-21-27-35_red-stonetalon-sunrock-scroll10_clara-occlusion',
-	'17-10-28-21-29-13_red-stonetalon-sunrock-scroll10_jean',
+	'17-10-28-14-25-00_green-undercity-magic-scroll0_hector',
+	'17-10-28-14-25-44_green-undercity-magic-scroll0_amy',
+	'17-10-28-14-37-17_green-undercity-magic-scroll0_ed',
+	'17-10-28-14-37-59_green-undercity-magic-scroll0_scott',
+	'17-10-28-14-38-55_green-undercity-magic-scroll0_roscoe',
 	'17-10-24-23-22-32_blue-darnassus-auctionhouse-scroll0_mildred',
 	'17-10-24-23-24-24_blue-darnassus-auctionhouse-scroll0_brett',
 	'17-10-24-23-26-01_blue-darnassus-auctionhouse-scroll0_gail',
 	'17-10-24-23-27-13_blue-darnassus-auctionhouse-scroll0_mary',
 	'17-10-24-23-28-52_blue-darnassus-auctionhouse-scroll0_gina',
-	'17-10-28-21-09-56_green-barrens-stagnantoasis-scroll10_lisa',
-	'17-10-28-20-09-45_black-silverpine-bridge-scroll5_amparo',
-	'17-10-28-20-30-27_black-hillsbrad-cascade-scroll5_richard',
-	'17-10-28-20-16-01_black-hillsbrad-tarren-scroll5_robert',
-	'17-10-28-19-55-15_black-silverpine-lake-scroll5_norma-occlusion',
+
 	'17-10-27-00-39-54_green-moonglade-river-scroll0_leann',
 	'17-10-27-08-56-45_blue-moonglade-tree-scroll0_raymond',
 	'17-10-24-22-58-40_blue-strangle-bootybay-scroll0_samantha',
 	'17-10-24-23-02-32_green-thunderbluff-poolsofvision-scroll0_alan',
 	'17-10-24-22-45-35_red-orgrimmar-valleyofhonor-scroll0_delores',
+
+
+
+	'17-10-28-19-31-24_black-tirisfal-coast-scroll5_james',
+	'17-10-28-19-34-09_black-tirisfal-coast-scroll5_sheila',
+	'17-10-28-19-35-13_black-tirisfal-coast-scroll5_nicholas',
+	'17-10-28-19-36-21_black-tirisfal-coast-scroll5_norman',
+	'17-10-28-19-37-36_black-tirisfal-coast-scroll5_kathleen',
+
+	'17-10-28-20-09-45_black-silverpine-bridge-scroll5_amparo',
+	'17-10-28-20-30-27_black-hillsbrad-cascade-scroll5_richard',
+	'17-10-28-20-16-01_black-hillsbrad-tarren-scroll5_robert',
+	'17-10-28-19-55-15_black-silverpine-lake-scroll5_norma-occlusion',
+	'17-10-28-20-53-36_red-orgrimmar-valleyofspirit-scroll5_brenda',
+	'17-10-28-21-01-11_red-barrens-ratchet-scroll5_tanya',
+
+
+
+	'17-10-28-21-24-48_red-stonetalon-sunrock-scroll10_anna',
+	'17-10-28-21-25-29_red-stonetalon-sunrock-scroll10_shirley',
+	'17-10-28-21-26-08_red-stonetalon-sunrock-scroll10_june',
+	'17-10-28-21-27-35_red-stonetalon-sunrock-scroll10_clara-occlusion',
+	'17-10-28-21-29-13_red-stonetalon-sunrock-scroll10_jean',
+
+	'17-10-28-21-09-56_green-barrens-stagnantoasis-scroll10_lisa',
 ])
