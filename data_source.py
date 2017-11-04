@@ -1,8 +1,12 @@
 import functools
 import os
+import time
+import datetime
 
 import numpy as np
 from scipy import ndimage
+import names
+from scipy import misc
 
 from prio_thread_pool import PrioThreadPool
 from constants import *
@@ -98,6 +102,13 @@ class DataSource(object):
         ))
         return arr
 
+    def zoom(self, arr):
+        if arr.ndim == 2:
+            arr = ndimage.zoom(arr, (img_h / 1080, img_w / 1920), order=1)
+        else:
+            arr = ndimage.zoom(arr, (img_h / 1080, img_w / 1920, 1))
+        return arr
+
     @functools.lru_cache(None)
     def mask_of_name(self, name):
         shapes = []
@@ -115,3 +126,25 @@ class DataSource(object):
             name, ' -> '.join(shapes)
         ))
         return arr
+
+    @staticmethod
+    def create_name(tags):
+        t = datetime.datetime.fromtimestamp(time.mktime(time.localtime()))
+        t = time.strftime(time_format)
+        firstname = names.get_first_name().lower()
+
+
+        fmt = '_'.join([
+            '{}', # time
+            '{}', # tags
+        ])
+        return fmt.format(
+            t, '-'.join(tags),
+        )
+
+    def save_new_data(self, img, mask, name):
+        print("saving {}".format(name))
+        path_img = os.path.join(self.path_img, name + '.png')
+        path_mask = os.path.join(self.path_mask, name + '.png')
+        misc.imsave(path_img, img)
+        misc.imsave(path_mask, mask)

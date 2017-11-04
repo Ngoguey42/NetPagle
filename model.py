@@ -1,13 +1,16 @@
 import os
+import multiprocessing
 
 import numpy as np
 import keras
 import names
 import time
 import datetime
+import scipy.ndimage as ndi
+import matplotlib.pyplot as plt
+
 
 import accuracy
-import paths
 from constants import *
 import keras_model
 import tensorflow as tf
@@ -45,11 +48,10 @@ class Model(object):
             self.epoch_count = self.read_epoch_count()
             print('  {} epochs'.format(self.epoch_count))
 
-        self.lrs = np.full([self.epoch_count], np.nan)
-        self.losses = np.full([self.epoch_count], np.nan)
-        self.accs = np.full([self.epoch_count], np.nan)
-        self.acctrains = np.full([self.epoch_count], np.nan)
-        self.acctests = np.full([self.epoch_count], np.nan)
+        self.lrs = np.full([self.epoch_count], 0, dtype='float64')
+        self.losses = np.full([self.epoch_count], 0, dtype='float64')
+        self.acctrains = np.full([self.epoch_count], 0, dtype='float64')
+        self.acctests = np.full([self.epoch_count], 0, dtype='float64')
 
         for model_name in self.model_names:
             model_info = model_name.split('_')
@@ -58,7 +60,6 @@ class Model(object):
             lr = float(lr)
             self.lrs[epoch] = float(lr)
             self.losses[epoch] = float(loss)
-            self.accs[epoch] = float(acc)
             self.acctrains[epoch] = float(trainacc)
             self.acctests[epoch] = float(testacc)
 
@@ -75,33 +76,18 @@ class Model(object):
         print()
         open(self.epoch_count_path, 'a').write('x')
         self.epoch_count += 1
-        self.losses = np.pad(self.losses, 1, 'constant', constant_values=np.nan)
-        self.accs = np.pad(self.accs, 1, 'constant', constant_values=np.nan)
-        self.acctrains = np.pad(self.acctrains, 1, 'constant', constant_values=np.nan)
-        self.acctests = np.pad(self.acctests, 1, 'constant', constant_values=np.nan)
-        # Todo add real values in arrays
 
         loss = logs.get('loss', 42)
         acc = logs.get('acc', 42)
+        lr = keras.backend.eval(self.m.optimizer.lr)
+        epoch = self.epoch_count - 1
 
-        now = datetime.datetime.now()
-        if self.previous_save is None or (now - self.previous_save).total_seconds() > self.delta_save:
-            self.previous_save = now
-            model_name = self.create_model_name(loss, acc)
-            self.m.save(os.path.join(
-                self.directory, model_name + '.hdf5'
-            ))
-
-    def create_model_name(self, loss, acc):
         t = datetime.datetime.fromtimestamp(time.mktime(time.localtime()))
         t = time.strftime(time_format)
-        epoch = self.epoch_count - 1
-        lr = keras.backend.eval(self.m.optimizer.lr)
-
-        info = self.eval_accuracies()
-        trainacc = info['acctrain']
-        testacc = info['acctest']
         lastname = names.get_last_name().lower()
+        info = self.eval_accuracies()
+        acctrain = info['acctrain']
+        acctest = info['acctest']
 
         fmt = '_'.join([
             '{}', # time
@@ -113,9 +99,23 @@ class Model(object):
             '{:04.2f}', # acctest
             '{}', # lastname
         ])
-        return fmt.format(
-            t, epoch, lr, loss, acc, trainacc, testacc, lastname
-        )
+        model_name = fmt.format(t, epoch, lr, loss, acc, acctrain, acctest, lastname)
+
+        self.lrs = np.asarray(self.lrs.tolist() + [lr])
+        self.losses = np.asarray(self.losses.tolist() + [loss])
+        self.acctrains = np.asarray(self.acctrains.tolist() + [acctrain])
+        self.acctests = np.asarray(self.acctests.tolist() + [acctest])
+
+        # now = datetime.datetime.now()
+        # if self.previous_save is None or (now - self.previous_save).total_seconds() > self.delta_save:
+            # self.previous_save = now
+            # model_name = self.create_model_name(loss, acc)
+        self.m.save(os.path.join(
+            self.directory, model_name + '.hdf5'
+        ))
+        print('-------------------------------------------------- Asking for refresh')
+        # self.refresh = True
+        self.show_board()
 
     def eval_accuracies(self):
         print('Predicting training set...')
@@ -136,6 +136,7 @@ class Model(object):
 
         self.delta_save = delta_save
         self.previous_save = None
+
         self.m.fit(
             self.ds.xtrain, self.ds.ytrain,
             epochs=epoch_count,
@@ -150,22 +151,44 @@ class Model(object):
         )
 
     def show_board(self):
-        import scipy.ndimage as ndi
-        import numpy as np
-        import matplotlib.pyplot as plt
-
         def _show_accuracy(ys, color, label):
             label = '{} (max={})'.format(label, ys.max())
-            plt.plot(ys, lw=1, alpha=0.5, ls=':', c=color)
-            plt.plot(ndi.gaussian_filter1d(ys, 3), lw=1, alpha=1, ls='-', c=color, label=label)
-            plt.plot(np.maximum.accumulate(ys), lw=1, alpha=1, ls='--', c=color)
-            plt.plot(np.minimum.accumulate(ys[::-1])[::-1], lw=1, alpha=1, ls='--', c=color)
+            ax1.plot(ndi.gaussian_filter1d(ys, 3), lw=1, alpha=1, ls='-', c=color, label=label, zorder=3)
+            above = np.maximum.accumulate(ys)
+            below = np.minimum.accumulate(ys[::-1])[::-1]
+            above = ndi.gaussian_filter1d(above, 2)
+            below = ndi.gaussian_filter1d(below, 2)
+            ax1.fill_between(
+                range(above.size), above, below,
+                facecolor=color,
+                alpha=1/3,
+                zorder=0,
+            )
 
+        fig, ax1 = plt.subplots(figsize=(16, 9))
         _show_accuracy(self.acctrains, 'red', 'Accuracy train set')
         _show_accuracy(self.acctests, 'green', 'Accuracy test set')
-        plt.plot(self.lrs, lw=1, alpha=1, ls='-', c='orange', label='Learning rate')
-        min_, max_ = np.median(self.losses) - self.losses.std(), np.median(self.losses) + self.losses.std()
-        losses = ((self.losses - min_) /  (max_ - min_)).clip(0, 1)
-        plt.plot(losses, lw=1, alpha=1, ls='-', c='yellow', label='loss')
-        plt.legend()
-        plt.show()
+        ax1.plot(self.lrs, lw=2, alpha=1/3, ls='-', c='orange', label='Learning rate', zorder=1)
+        ax1.set_xlabel('epoch')
+        ax1.set_ylabel('percent')
+        plt.legend(loc='center right')
+
+        ax2 = ax1.twinx()
+        mask = self.losses < self.losses.min() + self.losses.std() * 3
+        ax2.plot(
+            mask.nonzero()[0],
+            self.losses[mask],
+            lw=1, alpha=1, ls='-', c='purple',
+            label='loss (min={:.8f})'.format(self.losses.min()),
+            zorder=2,
+        )
+        ax2.set_ylabel('loss', color='purple')
+        ax2.tick_params('y', colors='purple')
+        plt.legend(loc='lower center')
+
+        plt.tight_layout()
+
+        plt.savefig(
+            self.directory + '/status.png',
+            dpi=180, orientation='landscape', bbox_inches='tight',
+        )

@@ -1,3 +1,4 @@
+import os
 import sys
 
 import numpy as np
@@ -7,7 +8,6 @@ import tensorflow as tf
 import descartes
 import shapely.geometry as sg
 
-import paths
 from constants import *
 import accuracy
 import data_source
@@ -66,11 +66,14 @@ keras.backend.tensorflow_backend.set_session(sess)
 ds = data_source.DataSource(PREFIX)
 m = model.Model(os.path.join(PREFIX, sys.argv[1]), ds)
 
-print(m.eval_accuracies())
+# print(m.eval_accuracies())
+for i, name in enumerate(TEST_NAMES):
 # exit()
 # exit()
 # for name, x, y, i in zip(ds.names, ds.xtrain, ds.ytrain, range(100000)):
-for i, name in enumerate(TEST_NAMES):
+# n = ds.names
+# np.random.shuffle(n)
+# for i, name in enumerate(n):
 # for i, name in enumerate([
 # 	'17-10-24-23-10-39_blue-thunderbluff-courtyard-scroll0_marilyn',
 # 	'17-10-24-23-28-52_blue-darnassus-auctionhouse-scroll0_gina',
@@ -80,8 +83,8 @@ for i, name in enumerate(TEST_NAMES):
 # 	'17-10-28-19-55-15_black-silverpine-lake-scroll5_norma-occlusion',
 # 	'17-10-28-20-08-44_black-silverpine-bridge-scroll5_steven',
 # ]):
-    # if not ('gina' in name or 'raym' in name):
-    #     continue
+    # if not ('clara' in name):
+        # continue
 
     print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
     print(i, name)

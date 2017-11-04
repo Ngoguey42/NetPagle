@@ -20,7 +20,8 @@ import names
 import skimage.segmentation
 import string
 
-import paths
+import data_source
+from constants import *
 
 class Segmentozor(object):
     def __init__(self, img):
@@ -207,6 +208,7 @@ print('img', img.shape)
 for i in range(3):
     print("  channel {}: mean:{}".format(i, img[..., i].mean()))
 
+ds = data_source.DataSource(PREFIX)
 tags = [
     ''.join(
         c
@@ -216,15 +218,7 @@ tags = [
     for s in sys.argv[1:]
 ]
 
-name = paths.create_name(tags)
-print(sys.argv[1:], tags, name)
-path_img = paths.img_path_of_name(name)
-path_mask = paths.mask_path_of_name(name)
-
-
+name = ds.create_name(tags)
 mask = mask_of_img(img, name)
-print('mask {!r} {:%}'.format(mask.shape, mask.mean()))
-
-
-misc.imsave(path_img, img)
-misc.imsave(path_mask, mask)
+print("mask: count:{}, mean:{:%}".format(mask.sum(), mask.mean()))
+ds.save_new_data(img, mask, name)

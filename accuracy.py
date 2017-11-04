@@ -75,56 +75,56 @@ class Heatmap(object):
         )))
 
         props = skimage.measure.regionprops(lbl)
-        self.centroids_yx = [
-            tuple(np.asarray(prop.centroid).astype(int).tolist())
-            for prop in props
-        ]
+        yx_of_prop = lambda prop: tuple(np.asarray(prop.centroid).astype(int).tolist())
+        props = sorted(props, key=lambda p: p.area, reverse=True)
+        self.centroids_yx = [yx_of_prop(prop) for prop in props]
 
-def is_accurate(y, hm):
+def analyse_prediction(y, hm):
     """Work on 1 prediction
 
     Steps
     -----
     - Smooth truth
     - Convert truth to a its bounding rectangle
-    - Build a list of centroids from predictions
-    - Reject if more than 3 predictions
-    - Find a prediction intersecting with truth
     """
     kernel_size = max(1, np.rint(7 * WIDTH_RATIO_ORIGIN))
     y = skimage.morphology.binary_closing(y, skimage.morphology.disk(kernel_size))
     yprops = skimage.measure.regionprops(
         ndimage.label(y, np.ones((3, 3)))[0]
     )
-    if len(yprops) != 1:
-        print('Warning, y {}/{} has {} objects'.format(
-            i, len(ys), len(yprops)
+    target_count = len(yprops)
+    if len(yprops) not in {0, 1}:
+        print('Warning, y has {} targets'.format(
+            target_count,
         ))
-        return False
+    if target_count == 0:
+        return 0, 0
 
     min_row, min_col, max_row, max_col = yprops[0].bbox
     y[min_row:max_row, min_col:max_col] = True
 
     hm = Heatmap(hm)
-    if len(hm.centroids_yx) > 3:
-        return False
-    for cen in hm.centroids_yx:
-        if y[cen]:
-            return True
-    return False
+    hit_count = 0
+    for _, centroid_yx in zip(range(target_count), hm.centroids_yx):
+        if y[centroid_yx]:
+            hit_count += 1
+    return target_count, hit_count
 
 def accuracy(truths, preds):
     assert truths.shape == preds.shape
-    success = 0
+    targets = 0
+    hits = 0
 
     def work(i):
-        nonlocal success
+        nonlocal targets, hits
         truth = truths[i]
         pred = preds[i]
-        if is_accurate(truth, pred):
-            success += 1
+        t, h = analyse_prediction(truth, pred)
+        targets += t
+        hits += h
 
     PrioThreadPool(-1).iter(0, work, range(len(truths)))
-    # for i in range(len(truths)):
-        # work(i)
-    return success / len(truths)
+    print("Accuracy of {}/{} = {:%} on {} images".format(
+        hits, targets, hits / targets, len(truths),
+    ))
+    return hits / targets
