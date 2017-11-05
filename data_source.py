@@ -137,9 +137,10 @@ class DataSource(object):
         fmt = '_'.join([
             '{}', # time
             '{}', # tags
+            '{}', # name
         ])
         return fmt.format(
-            t, '-'.join(tags),
+            t, '-'.join(tags), firstname,
         )
 
     def save_new_data(self, img, mask, name):

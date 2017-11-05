@@ -87,6 +87,11 @@ TEST_NAMES = sorted([
 	'17-10-24-23-26-01_blue-darnassus-auctionhouse-scroll0_gail',
 	'17-10-24-23-27-13_blue-darnassus-auctionhouse-scroll0_mary',
 	'17-10-24-23-28-52_blue-darnassus-auctionhouse-scroll0_gina',
+	'17-11-05-08-44-08_blue-darnassus-warrior-scroll0_andrew',
+	'17-11-05-08-44-48_blue-darnassus-warrior-scroll0_shirley',
+	'17-11-05-08-45-27_blue-darnassus-warrior-scroll0_barbara',
+	'17-11-05-08-46-41_blue-darnassus-warrior-scroll0_eugene',
+	'17-11-05-08-47-28_blue-darnassus-warrior-scroll0_deborah',
 
 	'17-10-27-00-39-54_green-moonglade-river-scroll0_leann',
 	'17-10-27-08-56-45_blue-moonglade-tree-scroll0_raymond',
@@ -107,6 +112,7 @@ TEST_NAMES = sorted([
 	'17-10-28-20-16-01_black-hillsbrad-tarren-scroll5_robert',
 	'17-10-28-19-55-15_black-silverpine-lake-scroll5_norma-occlusion',
 	'17-10-28-20-53-36_red-orgrimmar-valleyofspirit-scroll5_brenda',
+	'17-11-05-08-59-47_red-orgrimmar-valleyofspirit-scroll5_suzanna',
 	'17-10-28-21-01-11_red-barrens-ratchet-scroll5_tanya',
 
 
@@ -118,4 +124,8 @@ TEST_NAMES = sorted([
 	'17-10-28-21-29-13_red-stonetalon-sunrock-scroll10_jean',
 
 	'17-10-28-21-09-56_green-barrens-stagnantoasis-scroll10_lisa',
+
+
+
+
 ])

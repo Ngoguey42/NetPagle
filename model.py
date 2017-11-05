@@ -1,19 +1,17 @@
 import os
 import multiprocessing
-
-import numpy as np
-import keras
-import names
 import time
 import datetime
+import functools
+
+import numpy as np
+import names
 import scipy.ndimage as ndi
 import matplotlib.pyplot as plt
 import pandas as pd
 
 import accuracy
 from constants import *
-import keras_model
-import tensorflow as tf
 
 class Model(object):
     """
@@ -21,7 +19,7 @@ class Model(object):
     """
 
     def __init__(self, directory, ds):
-        print('Constructing Model')
+        print('Constructing Model class')
         try:
             os.mkdir(directory)
         except FileExistsError:
@@ -31,16 +29,6 @@ class Model(object):
         self.directory = directory
         self.model_names = self.create_model_names()
         self.previous_save = None
-
-        if len(self.model_names) == 0:
-            print('Creating keras model from scratch...')
-            self.m = keras_model.create_model()
-        else:
-            path = os.path.join(self.directory, self.model_names[-1] + '.hdf5')
-            print('Creating keras model from file {}'.format(
-                path
-            ))
-            self.m = keras.models.load_model(path)
 
 
         self.df = pd.DataFrame()
@@ -58,6 +46,27 @@ class Model(object):
         if self.df.size > 0:
             self.df.loc[:, 'epoch'] = pd.to_numeric(self.df.epoch, downcast='integer')
 
+    @property
+    @functools.lru_cache(1)
+    def keras(self):
+        import keras
+        return keras
+
+    @property
+    @functools.lru_cache(1)
+    def m(self):
+        import keras_model
+
+        if len(self.model_names) == 0:
+            print('Creating keras model from scratch...')
+            return keras_model.create_model()
+        else:
+            path = os.path.join(self.directory, self.model_names[-1] + '.hdf5')
+            print('Creating keras model from file {}'.format(
+                path
+            ))
+            return self.keras.models.load_model(path)
+
     def create_model_names(self):
         return sorted([fname[:-5]
              for fname in os.listdir(self.directory)
@@ -73,7 +82,7 @@ class Model(object):
 
         loss = logs.get('loss', 42)
         acc = logs.get('acc', 42)
-        lr = keras.backend.eval(self.m.optimizer.lr)
+        lr = self.keras.backend.eval(self.m.optimizer.lr)
 
         t = datetime.datetime.fromtimestamp(time.mktime(time.localtime()))
         t = time.strftime(time_format)
@@ -137,7 +146,7 @@ class Model(object):
             batch_size=1,
             verbose=1,
             callbacks=[
-                keras.callbacks.LambdaCallback(on_epoch_end=self.on_epoch_end),
+                self.keras.callbacks.LambdaCallback(on_epoch_end=self.on_epoch_end),
                 # keras.callbacks.ReduceLROnPlateau(
                 #     'loss', factor=1/2, patience=100, verbose=True, cooldown=5,
                 # ),
@@ -148,18 +157,22 @@ class Model(object):
         def _show_accuracy(ys, color, label):
             ax1.plot(
                 self.df.epoch, _smooth(ys, 2),
-                lw=1, alpha=1, ls='-', c=color, zorder=3,
+                lw=1, alpha=1, ls='-', c=color, zorder=50,
                 label='{} (max={})'.format(label, ys.max()),
+            )
+            ax1.plot(
+                self.df.epoch, ys, '.',
+                ms=0.5, alpha=1, c=color, zorder=40, aa=True,
             )
             ax1.fill_between(
                 self.df.epoch,
                 # np.maximum.accumulate(ys),
                 # np.minimum.accumulate(ys[::-1])[::-1],
-                _smooth(np.maximum.accumulate(ys), 1),
-                _smooth(np.minimum.accumulate(ys[::-1])[::-1], 1),
+                np.maximum.accumulate(ys),
+                np.minimum.accumulate(ys[::-1])[::-1],
                 facecolor=color,
                 alpha=1/3,
-                zorder=0,
+                zorder=10,
             )
 
         def _steps():
@@ -202,10 +215,11 @@ class Model(object):
         _show_accuracy(self.df.acctest, 'green', 'Accuracy test set')
         ax1.plot(
             self.df.epoch, self.df.lr,
-            lw=2, alpha=1/3, ls='-', c='orange', label='Learning rate', zorder=1
+            lw=2, alpha=1/3, ls='-', c='orange', label='Learning rate', zorder=20
         )
         ax1.set_xlabel('epoch')
         ax1.set_ylabel('percent')
+        ax1.set_title(self.directory)
         plt.legend(loc='lower center')
 
         ax2 = ax1.twinx()
@@ -215,7 +229,7 @@ class Model(object):
             self.df.loss[mask],
             lw=1, alpha=1, ls='-', c='purple',
             label='loss (min={:.8f})'.format(self.df.loss.min()),
-            zorder=2,
+            zorder=45,
         )
         ax2.set_ylabel('loss', color='purple')
         ax2.tick_params('y', colors='purple')
@@ -225,5 +239,5 @@ class Model(object):
 
         plt.savefig(
             self.directory + '/status.png',
-            dpi=180, orientation='landscape', bbox_inches='tight',
+            dpi=200, orientation='landscape', bbox_inches='tight',
         )
