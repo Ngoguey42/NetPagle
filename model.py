@@ -12,8 +12,9 @@ import pandas as pd
 
 import accuracy
 from constants import *
+import model_show
 
-class Model(object):
+class Model(model_show.ModelShow):
     """
     model name: time_epoch_lr_loss_acc_trainacc_testacc_lastname
     """
@@ -135,7 +136,7 @@ class Model(object):
             'acctest': acctest,
         }
 
-    def fit(self, epoch_count=10000, delta_save=0):
+    def fit(self, epoch_count=1000, delta_save=0):
 
         self.delta_save = delta_save
         self.previous_save = None
@@ -151,93 +152,4 @@ class Model(object):
                 #     'loss', factor=1/2, patience=100, verbose=True, cooldown=5,
                 # ),
             ],
-        )
-
-    def show_board(self):
-        def _show_accuracy(ys, color, label):
-            ax1.plot(
-                self.df.epoch, _smooth(ys, 2),
-                lw=1, alpha=1, ls='-', c=color, zorder=50,
-                label='{} (max={})'.format(label, ys.max()),
-            )
-            ax1.plot(
-                self.df.epoch, ys, '.',
-                ms=0.5, alpha=1, c=color, zorder=40, aa=True,
-            )
-            ax1.fill_between(
-                self.df.epoch,
-                # np.maximum.accumulate(ys),
-                # np.minimum.accumulate(ys[::-1])[::-1],
-                np.maximum.accumulate(ys),
-                np.minimum.accumulate(ys[::-1])[::-1],
-                facecolor=color,
-                alpha=1/3,
-                zorder=10,
-            )
-
-        def _steps():
-            i = 0
-            start = 0
-            step = 3
-            while start <= border_dist.max():
-                yield i, start, start + step
-                start += step
-                step += 1
-                i += 1
-
-        def _kernel(radius, strength):
-            a = np.zeros(radius * 2 + 1, float)
-            a[radius] = 1
-            a = ndi.gaussian_filter1d(a, radius / (4 / strength))
-            return a
-
-        def _smooth(y, strength):
-            res = np.zeros(y.shape, dtype=float)
-            for radius, start, end in _steps():
-                kernel = _kernel(radius, strength)
-                res += (
-                    ndi.filters.convolve1d(y, kernel, mode='nearest') *
-                    ((border_dist >= start) & (border_dist < end))
-                )
-            return res
-
-        if self.df.shape[-1] < 2:
-            print('No plot when less than 2 elements!')
-            return
-
-        border_dist = np.min(
-            np.c_[self.df.epoch, self.df.epoch.max() - self.df.epoch],
-            axis=1,
-        )
-
-        fig, ax1 = plt.subplots(figsize=(16, 9))
-        _show_accuracy(self.df.acctrain, 'red', 'Accuracy train set')
-        _show_accuracy(self.df.acctest, 'green', 'Accuracy test set')
-        ax1.plot(
-            self.df.epoch, self.df.lr,
-            lw=2, alpha=1/3, ls='-', c='orange', label='Learning rate', zorder=20
-        )
-        ax1.set_xlabel('epoch')
-        ax1.set_ylabel('percent')
-        ax1.set_title(self.directory)
-        plt.legend(loc='lower center')
-
-        ax2 = ax1.twinx()
-        mask = self.df.loss < self.df.loss.min() + self.df.loss.std() * 3
-        ax2.plot(
-            self.df.epoch[mask],
-            self.df.loss[mask],
-            lw=1, alpha=1, ls='-', c='purple',
-            label='loss (min={:.8f})'.format(self.df.loss.min()),
-            zorder=45,
-        )
-        ax2.set_ylabel('loss', color='purple')
-        ax2.tick_params('y', colors='purple')
-        plt.legend(loc='lower left')
-
-        plt.tight_layout()
-
-        plt.savefig(
-            self.directory + '/status.png',
-            dpi=200, orientation='landscape', bbox_inches='tight',
         )

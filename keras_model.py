@@ -74,7 +74,8 @@ from constants import *
 
 LAYERS = '8_8_16_16_32_32_16_16_8_8'
 LAYERS = '16_16_32_32_16_16'
-LAYERS = '16_32_16'
+# LAYERS = '16_32_16'
+# LAYERS = '16_32_64_32_16'
 LAYERS = [int(s) for s in LAYERS.split('_')]
 def _map(prev, cur, next):
     if prev is None:
