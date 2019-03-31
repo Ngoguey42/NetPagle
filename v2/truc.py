@@ -1,9 +1,8 @@
 """
 Made for wow 1.12.1.5875, python>=3.6
 
-
 ````sh
-$ pip install pypiwin32==224 Pymem==1.0 psutil mss numpy
+$ pip install pypiwin32==224 Pymem==1.0 psutil mss numpy matplotlib
 ```
 
 # Links
@@ -35,15 +34,14 @@ https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-progra
 
 """
 
-import functools
-
 import numpy as np
 import pymem
 import psutil
 import mss
-import skimage.io
+import matplotlib.pyplot as plt
 
-MAGIC_SCALE_FACTOR = 1 / 1.10
+MAGIC_SCALE_FACTOR = 1 / 1.10 # TODO: Find the real formula
+SCREEN_SIZE = 1920, 1080 # TODO: Find in memory
 
 def set_pretty_print_env(level=None):
     import logging
@@ -76,9 +74,7 @@ del set_pretty_print_env
 
 class Offset:
     player_name = 0x827D88
-    # target_guid = 0x74E2D4
     obj_manager = 0x00741414
-    version = 0x00837C0
     camera = 0x0074B2BC
 
     class ObjectManager:
@@ -100,55 +96,6 @@ class Offset:
         facing = xyz + 3 * 4
         fov = xyz + 14 * 4
         aspect = xyz + 15 * 4
-
-class GameObject:
-    def __init__(self, w, addr):
-        assert w.pm.read_int(addr + Offset.Object.type) == 5
-        self.addr = addr
-        a = addr
-        a += Offset.GameObject.name1
-        a = w.pm.read_uint(a)
-        a += Offset.GameObject.name2
-        a = w.pm.read_uint(a)
-        self.name = w.pm.read_string(a)
-        self.xyz = w.pull_floats(addr + Offset.GameObject.xyz, (3,))
-
-class Camera():
-    def __init__(self, w):
-        cam0 = w.pm.read_uint(w.base_address + Offset.camera)
-        cam1 = w.pm.read_uint(cam0 + Offset.Camera.offset)
-
-        self.xyz = w.pull_floats(cam1 + Offset.Camera.xyz, (3,))
-        print(self.xyz)
-        self.facing = w.pull_floats(cam1 + Offset.Camera.facing, (3, 3))
-        print(self.facing)
-        self.fov = w.pull_floats(cam1 + Offset.Camera.fov, ())
-        self.aspect = w.pull_floats(cam1 + Offset.Camera.aspect, ())
-        self.size = np.asarray([1920, 1080]) # TODO: Find offsets
-        assert np.allclose(self.aspect, np.divide.reduce(self.size.astype(float)))
-
-    def world_to_screen(self, xyz):
-        diff = xyz - self.xyz
-        view = diff @ np.linalg.inv(self.facing)
-        cam = np.asarray([-view[1], -view[2], view[0]])
-
-        behind = cam[-1] < 0
-
-        fx = (1 / (1 + 1 / self.aspect ** 2)) ** 0.5
-        fy = fx / self.aspect
-
-        fx = np.tan(self.fov * fx / 2 * MAGIC_SCALE_FACTOR)
-        fy = np.tan(self.fov * fy / 2)
-
-        fx = cam[0] / (fx * cam[2])
-        fy = cam[1] / (fy * cam[2])
-
-        outside = np.any(np.abs([fx, fy]) > 1) or behind
-
-        fx = self.size[0] / 2 * (1 + fx)
-        fy = self.size[1] / 2 * (1 + fy)
-
-        return np.asarray([fx, fy]), outside, behind
 
 class WoW:
     def __init__(self, pid=None):
@@ -192,11 +139,140 @@ class WoW:
             if self.pm.read_int(obj_addr + Offset.Object.type) == 5:
                 yield GameObject(self, obj_addr)
 
+class Camera():
+    def __init__(self, w):
+        cam0 = w.pm.read_uint(w.base_address + Offset.camera)
+        cam1 = w.pm.read_uint(cam0 + Offset.Camera.offset)
+
+        self.xyz = w.pull_floats(cam1 + Offset.Camera.xyz, (3,))
+        self.facing = w.pull_floats(cam1 + Offset.Camera.facing, (3, 3))
+        self.fov = w.pull_floats(cam1 + Offset.Camera.fov, ())
+        self.aspect = w.pull_floats(cam1 + Offset.Camera.aspect, ())
+        self.size = np.asarray(SCREEN_SIZE)
+        assert np.allclose(self.aspect, np.divide.reduce(self.size.astype(float)))
+
+    def world_to_screen(self, xyz):
+        diff = xyz - self.xyz
+        """
+        At this point:
+        - Origin is the center of the screen
+        - Unit vector is a yard long
+        - Axes are right handed
+               z-axis (sky)
+                  ^
+                  |  7 x-axis (north)
+                  | /
+         y-axis   |/
+          <-------+
+        (west)
+        """
+
+        view = diff @ np.linalg.inv(self.facing)
+        """
+        At this point:
+        - Origin is the center of the screen
+        - Unit vector is ~a yard long
+        - Axes are right handed
+               z-axis (top of the screen)
+                  ^
+                  |  7 x-axis (depth)
+                  | /
+         y-axis   |/
+          <-------+
+        (left of the screen)
+        """
+
+        cam = np.asarray([-view[1], -view[2], view[0]])
+        """
+        At this point:
+        - Origin is the center of the screen
+        - Unit vector is a yard long
+        - Axes are right handed
+            7 z-axis (depth)
+           /
+          /      x-axis
+         +--------->
+         |    (right of the screen)
+         |
+         |
+         v  y-axis
+        (bottom of the screen)
+        """
+
+        fov_x = (1 / (1 + 1 / self.aspect ** 2)) ** 0.5
+        fov_y = fov_x / self.aspect
+        fov_x *= self.fov
+        fov_y *= self.fov
+        fov_x *= MAGIC_SCALE_FACTOR
+
+        screen_right_at_unit_depth = np.tan(fov_x / 2)
+        screen_bottom_at_unit_depth = np.tan(fov_y / 2)
+
+        screen_right_at_point_depth = screen_right_at_unit_depth * cam[2]
+        screen_bottom_at_point_depth = screen_bottom_at_unit_depth * cam[2]
+
+        screen = np.asarray([
+            cam[0] / screen_right_at_point_depth,
+            cam[1] / screen_bottom_at_point_depth,
+        ])
+        """
+        At this point:
+        - Origin is the center of the screen
+        - Unit vector is half of the screen
+                 x-axis
+         +--------->
+         |    (right of the screen)
+         |
+         |
+         v  y-axis
+        (bottom of the screen)
+        """
+
+        raster = self.size / 2 * (1 + screen)
+        """
+        At this point:
+        - Origin is the top left of the screen
+        - Unit vector is a pixel
+                 x-axis
+         +--------->
+         |    (right of the screen)
+         |
+         |
+         v  y-axis
+        (bottom of the screen)
+        """
+
+        behind = cam[2] < 0
+        visible = np.all(np.abs(screen) <= 1) and not behind
+        return raster, visible, behind
+
+class GameObject:
+    def __init__(self, w, addr):
+        assert w.pm.read_int(addr + Offset.Object.type) == 5
+        self.addr = addr
+        a = addr
+        a += Offset.GameObject.name1
+        a = w.pm.read_uint(a)
+        a += Offset.GameObject.name2
+        a = w.pm.read_uint(a)
+        self.name = w.pm.read_string(a)
+        self.xyz = w.pull_floats(addr + Offset.GameObject.xyz, (3,))
+
 w = WoW()
 cam = Camera(w)
+
+print('  Snapping...')
+with mss.mss() as sct:
+    monitor = sct.monitors[1]
+    img = sct.grab(monitor)
+    img = np.asarray(img)[:, :, [2, 1, 0]]
+    print('  Snaped!', img.shape)
+
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.imshow(img)
+
 for go in list(w.gen_game_objects()):
-    if 'Aller' not in go.name:
-        continue
 
     x, y, z = go.xyz
     ox = x - cam.xyz[0]
@@ -210,23 +286,12 @@ for go in list(w.gen_game_objects()):
           f'{z - cam.xyz[2]:+7.2f}({z:<10.2f})), '
     )
 
-    (x, y), outside, behind = cam.world_to_screen(go.xyz)
-    print('>', x, y, outside, behind)
+    (x, y), visible, behind = cam.world_to_screen(go.xyz)
+    print('>', x, y, visible, behind)
 
-    if not outside:
-        print('  Snapping...')
-        with mss.mss() as sct:
-            monitor = sct.monitors[1]
-            img = sct.grab(monitor)
-            img = np.asarray(img)[:, :, [2, 1, 0]]
-            print('  Snaped!', img.shape)
-        for ii in range(-2, 3):
-            for jj in range(-2, 3):
-                img[int(y - ii), int(x - jj)] = [255, 0, 0]
-        print('  Writing...')
-        skimage.io.imsave('check.png', img)
-        print('  Wrote check.png')
+    if visible:
+        ax.annotate(go.name, xy=(x, y), xytext=(x - 150, y + 150),
+            arrowprops=dict(facecolor='black', shrink=0.005))
 
-    x = x / cam.size[0]
-    y = y / cam.size[1]
-    print(f'  {x:.1%}, {y:.1%}')
+plt.show()
+plt.close('all')
