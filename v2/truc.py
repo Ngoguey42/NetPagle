@@ -39,6 +39,9 @@ import pymem
 import psutil
 import mss
 import matplotlib.pyplot as plt
+plt.close('all')
+
+from dbc import GameObjectDisplayInfo
 
 MAGIC_SCALE_FACTOR = 1 / 1.10 # TODO: Find the real formula
 SCREEN_SIZE = 1920, 1080 # TODO: Find in memory
@@ -91,6 +94,7 @@ class Offset:
         xyz = 0x2c4
         angles = xyz + 3 * 4 # TODO: Rename
         quaternion = xyz - 5 * 4
+        display_id = 0x2a8
 
     class Camera:
         offset = 0x65B8
@@ -100,7 +104,7 @@ class Offset:
         aspect = xyz + 15 * 4
 
 class WoW:
-    def __init__(self, pid=None):
+    def __init__(self, pid=None, godi_path='Y:\\dbc\\GameObjectDisplayInfo.dbc'):
         if pid is None:
             pid, = [ps.pid for ps in psutil.process_iter() if ps.name() == 'WoW.exe']
 
@@ -119,11 +123,19 @@ class WoW:
         self.player_name = pm.read_string(self.base_address + Offset.player_name)
         self.first_obj_addr = first_obj_addr
 
+        self.godi = GameObjectDisplayInfo(godi_path)
+
     def pull_floats(self, addr, shape):
         a = np.empty(shape, 'float32')
         for i, idxs in enumerate(np.ndindex(*shape)):
             a[idxs] = self.pm.read_float(addr + i * 4)
         return a.astype('float64')
+
+    def pull_u32s(self, addr, shape):
+        a = np.empty(shape, 'uint32')
+        for i, idxs in enumerate(np.ndindex(*shape)):
+            a[idxs] = self.pm.read_uint(addr + i * 4)
+        return a
 
     def gen_objects(self):
         obj_addr = self.first_obj_addr
@@ -261,6 +273,14 @@ class GameObject:
         self.xyz = w.pull_floats(addr + Offset.GameObject.xyz, (3,))
         self.angles = w.pull_floats(addr + Offset.GameObject.angles, (3,))
         self.quaternion = w.pull_floats(addr + Offset.GameObject.quaternion, (4,)) # i, j, k, real
+
+        self.display_id = w.pm.read_uint(addr + Offset.GameObject.display_id)
+        if self.display_id in w.godi.df.index:
+            self.model_name = w.godi.df.loc[self.display_id, 'model']
+            # print('ok {:>45}   {}'.format(self.name, self.model_name))
+        else:
+            print('KO', self.name)
+            self.model_name = None
 
         q = self.quaternion * [-1, -1, -1, 1]
 
@@ -404,8 +424,8 @@ for go in list(w.gen_game_objects()):
     if any(
             s in go.name
             for s in [
-                    'Onyx', 'Fureur', 'Zep',
-
+                    # 'lettre'
+                    # 'Onyx', 'Fureur', 'Zep',
                     # 'Banc',
             ]
     ):
@@ -433,7 +453,8 @@ for go in list(w.gen_game_objects()):
             f'{xyz[2] - cam.xyz[2]:+7.2f}({xyz[2]:<6.2f})) '
             f'{go.angles} '
         )
-        print(go.model_matrix)
+        print(go.model_name)
+        # print(go.model_matrix)
         # print('>', x, y, visible, behind)
         ax.add_patch(*patchify_points(
             [sg.Point(x, y),],
@@ -452,7 +473,7 @@ for go in list(w.gen_game_objects()):
 
         for i in range(3):
             c = ['red', 'green', 'blue'][i]
-            for v in np.linspace(0, 1, 5):
+            for v in np.linspace(0, 1, 15):
                 # xyz = go.xyz
                 xyz = np.r_[(np.arange(3) == i) * v, 1]
                 # print(xyz)
@@ -469,20 +490,52 @@ for go in list(w.gen_game_objects()):
                         fill=False,
                         ec=c,
                     ))
+        o = 0
+        n = 50
 
+        # a = w.pull_floats(go.addr + o, (n,)) # + Offset.GameObject.xyz - 32 * 4, (n,))
+        # rows.append({
+        #     i: v
+        #     for i, v in enumerate(a)
+        # })
 
-        a = w.pull_floats(go.addr + Offset.GameObject.xyz - 32 * 4, (50,))
+        a = w.pull_u32s(go.addr + o, (n,)) # + Offset.GameObject.xyz - 32 * 4, (n,))
         rows.append({
-            i: v
+            f'{i * 4 + o:#05x}': int(v)
             for i, v in enumerate(a)
         })
 
 
-df = pd.DataFrame(rows).T
-df = df[~df.isnull().any(axis=1)]
-df['ptp'] = df.max(axis=1) - df.min(axis=1)
-df.loc[17, :] = -42
-df.loc[18, :] = -42
-print(df)
+
+# df = pd.DataFrame(rows).T
+# print(df[df.index == '0x2a8'])
+# print(df[df.index == '0x8c8'])
+# print(df.iloc['0x8c8'])
+
+
+# df = df[~df.isnull().any(axis=1)]
+# df['ptp'] = df.max(axis=1) - df.min(axis=1)
+# df.loc[17, :] = -42
+# df.loc[18, :] = -42
+
+# df.index=
+
+# mask = df.eq(df.iloc[:, 0], axis=0).all(1)
+# df = df[mask]
+
+# mask = df.iloc[:, 0] != 0
+# df = df[mask]
+
+# # df = df.reset_index(drop=True)
+# dff = pd.DataFrame(df.values.astype('uint32').view('float32'), index=df.index)
+
+# mask = (dff.iloc[:, 0] != 1.) & ~((dff.iloc[:, 0] > 0.1) & (dff.iloc[:, 0] < 4)) & ~((dff.iloc[:, 0] < -0.1) & (dff.iloc[:, 0] > -4))
+# df = df[mask]
+# dff = dff[mask]
+
+
+
+
+
+# print(df)
 plt.show()
-plt.close('all')
