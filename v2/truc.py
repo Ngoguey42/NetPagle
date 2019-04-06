@@ -32,6 +32,15 @@ https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-progra
 https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/328263-wow-1-12-1-5875-info-dump-thread-40.html#post4022185
 https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/544312-12-1-2016-bans-3.html#post3386119
 
+### MPQ files
+https://wow.curseforge.com/projects/mpqviewer/files # Have game closed
+
+##### M2 files
+https://wow.curseforge.com/projects/project-3043 # Have game opened
+
+##### DBC files
+https://wowdev.wiki/DB/GameObjectDisplayInfo
+
 """
 
 import numpy as np
@@ -39,9 +48,11 @@ import pymem
 import psutil
 import mss
 import matplotlib.pyplot as plt
-plt.close('all')
+import pandas as pd
+import shapely.geometry as sg
 
 from dbc import GameObjectDisplayInfo
+from show import patchify_points
 
 MAGIC_SCALE_FACTOR = 1 / 1.10 # TODO: Find the real formula
 SCREEN_SIZE = 1920, 1080 # TODO: Find in memory
@@ -92,7 +103,7 @@ class Offset:
         name1 = 0x214
         name2 = 0x8
         xyz = 0x2c4
-        angles = xyz + 3 * 4 # TODO: Rename
+        angle = xyz + 3 * 4
         quaternion = xyz - 5 * 4
         display_id = 0x2a8
 
@@ -271,19 +282,16 @@ class GameObject:
         a = w.pm.read_uint(a)
         self.name = w.pm.read_string(a)
         self.xyz = w.pull_floats(addr + Offset.GameObject.xyz, (3,))
-        self.angles = w.pull_floats(addr + Offset.GameObject.angles, (3,))
+        self.angle = w.pull_floats(addr + Offset.GameObject.angle, ())
         self.quaternion = w.pull_floats(addr + Offset.GameObject.quaternion, (4,)) # i, j, k, real
 
         self.display_id = w.pm.read_uint(addr + Offset.GameObject.display_id)
         if self.display_id in w.godi.df.index:
             self.model_name = w.godi.df.loc[self.display_id, 'model']
-            # print('ok {:>45}   {}'.format(self.name, self.model_name))
         else:
-            print('KO', self.name)
             self.model_name = None
 
         q = self.quaternion * [-1, -1, -1, 1]
-
         rot_matrix = [
 
             [1 - 2 * q[1] ** 2 - 2 * q[2] ** 2,
@@ -303,15 +311,7 @@ class GameObject:
             [0, 0, 0, 1],
         ]
 
-        self.model_matrix = (
-
-            # rot(-self.angles[0], 2) @
-            # rot(-self.angles[1], 1) @
-            # rot(-self.angles[2], 0) @
-            rot_matrix @
-            translate(self.xyz)
-
-        )
+        self.model_matrix = rot_matrix @ translate(self.xyz)
 
 def rot(angle, axis):
     m = np.eye(4)
@@ -335,72 +335,6 @@ def translate(xyz):
     m[3, :3] = xyz
     return m
 
-import shapely.geometry as sg
-import matplotlib.path as mpath
-import matplotlib.patches as mpatches
-
-def patchify_points(geoms, ec='black', fc='black', radius=0.1, *args, **kwargs):
-    """Creates points patches from a sequence of geometries.
-    Radius should be set accordingly to final picture extent.
-    Default style can be modified using same kwargs as matplotlib.patches.CirclePolygon"""
-
-    patches = []
-    for point in _point_iterator(geoms):
-        if point.is_empty:
-            continue
-        # Monkey patching to easily add some basic styling
-        kwargs_ = kwargs_from_prop(point, CIRCLEPOLY_PROPS, ['ec', 'fc', 'radius'])
-        kwargs_.update(kwargs)
-        ec = getattr(point, 'ec', ec)
-        fc = getattr(point, 'fc', fc)
-        radius = getattr(point, 'radius', radius)
-        xy = point.coords
-        patch = mpatches.CirclePolygon(
-            *args,
-            xy=tuple(xy)[0],
-            radius=radius,
-            ec=ec,
-            fc=fc,
-            **kwargs_
-            )
-        patches.append(patch)
-    return patches
-
-def _point_iterator(obj):
-    if isinstance(obj, (sg.Point)):
-        yield obj
-    elif isinstance(obj, (sg.MultiPoint)):
-        for p in obj.geoms:
-            yield p
-    elif isinstance(obj, (sg.LineString)):
-        for c in obj.coords:
-            yield sg.Point(c)
-    elif isinstance(obj, (sg.MultiLineString)):
-        for l in obj.geoms:
-            yield from _point_iterator(l)
-    elif isinstance(obj, (sg.Polygon)):
-        yield from _point_iterator(sg.LineString(obj.exterior))
-        for obj2 in obj.interiors:
-            yield from _point_iterator(sg.LineString(obj2))
-    else:
-        try:
-            tup = tuple(obj)
-        except TypeError:
-            raise TypeError('Could not use type %s' % type(obj))
-        else:
-            for obj2 in tup:
-                yield from _point_iterator(obj2)
-def kwargs_from_prop(geom, props, special_cases):
-    return {
-        key: getattr(geom, key, 'not here')
-        for key in props
-        if getattr(geom, key, 'not here') != 'not here' and key not in special_cases
-    }
-
-PATHPATCH_PROPS = list(mpatches.PathPatch(None).properties().keys())
-CIRCLEPOLY_PROPS = list(mpatches.CirclePolygon((0,0)).properties().keys())
-TEXT_PROPS = list(plt.Text().properties().keys())
-
 
 w = WoW()
 cam = Camera(w)
@@ -412,11 +346,10 @@ with mss.mss() as sct:
     img = np.asarray(img)[:, :, [2, 1, 0]]
     print('  Snaped!', img.shape)
 
+plt.close('all')
 fig = plt.figure()
 ax = fig.add_subplot(111)
 ax.imshow(img)
-import pandas as pd
-
 
 rows = []
 jj = -1
@@ -443,46 +376,30 @@ for go in list(w.gen_game_objects()):
     (x, y), visible, behind = cam.world_to_screen(xyz[:3])
 
     if visible:
-
         jj += 1
-        # print('GameObject', go.name, go.xyz, go.angles)
+
+        mn = str(go.model_name).split("\\")[-1:]
         print(
             f'{jj:2}{go.name:>30}: ('
             f'{ox:+7.2f}({dx})({xyz[0]:<10.2f}), '
             f'{oy:+7.2f}({dy})({xyz[1]:<10.2f}), '
             f'{xyz[2] - cam.xyz[2]:+7.2f}({xyz[2]:<6.2f})) '
-            f'{go.angles} '
+            f'{(go.angle / np.pi * 180 + 360) % 360:5.1f}deg {mn}'
         )
-        print(go.model_name)
-        # print(go.model_matrix)
-        # print('>', x, y, visible, behind)
         ax.add_patch(*patchify_points(
             [sg.Point(x, y),],
             radius=4.,
             fill=False,
         ))
-        ax.text(
-            x, y,
-            str(jj),
-            fontsize=10,
-        )
-        #     xy=(x, y),
-        #     xytext=(x - 150, y + 150),
-        #     arrowprops=dict(facecolor='black', shrink=0.005)
-        # )
+        ax.text(x, y, jj, fontsize=10)
 
         for i in range(3):
             c = ['red', 'green', 'blue'][i]
             for v in np.linspace(0, 1, 15):
-                # xyz = go.xyz
                 xyz = np.r_[(np.arange(3) == i) * v, 1]
-                # print(xyz)
                 xyz = xyz @ go.model_matrix
                 assert xyz[-1] == 1
-                # xyz += go.xyz
-
                 (x, y), visible, behind = cam.world_to_screen(xyz[:3])
-                # print(i, v, xyz, x, y, visible)
                 if not behind:
                     ax.add_patch(*patchify_points(
                         [sg.Point(x, y),],
@@ -490,9 +407,9 @@ for go in list(w.gen_game_objects()):
                         fill=False,
                         ec=c,
                     ))
+
         o = 0
         n = 50
-
         # a = w.pull_floats(go.addr + o, (n,)) # + Offset.GameObject.xyz - 32 * 4, (n,))
         # rows.append({
         #     i: v
@@ -505,9 +422,8 @@ for go in list(w.gen_game_objects()):
             for i, v in enumerate(a)
         })
 
+df = pd.DataFrame(rows).T
 
-
-# df = pd.DataFrame(rows).T
 # print(df[df.index == '0x2a8'])
 # print(df[df.index == '0x8c8'])
 # print(df.iloc['0x8c8'])
@@ -532,9 +448,6 @@ for go in list(w.gen_game_objects()):
 # mask = (dff.iloc[:, 0] != 1.) & ~((dff.iloc[:, 0] > 0.1) & (dff.iloc[:, 0] < 4)) & ~((dff.iloc[:, 0] < -0.1) & (dff.iloc[:, 0] > -4))
 # df = df[mask]
 # dff = dff[mask]
-
-
-
 
 
 # print(df)

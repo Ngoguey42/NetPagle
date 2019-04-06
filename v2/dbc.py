@@ -4,12 +4,7 @@ import pandas as pd
 class GameObjectDisplayInfo:
     def __init__(self, path):
         self.bts = open(path, 'rb').read()
-
-        print(self.bts[:100])
         assert self.magic == b'WDBC'
-        print(self.pull_u32s(0x4, 4))
-
-        print(len(self.bts))
         assert len(self.bts) == (
             5 * 4 + self.string_block_size + self.record_count * self.record_size
         )
@@ -80,7 +75,6 @@ class GameObjectDisplayInfo:
         return a
 
     # ******************************************************************************************* **
-
 
 if __name__ == '__main__':
     path = 'Y:\\dbc\\GameObjectDisplayInfo.dbc'

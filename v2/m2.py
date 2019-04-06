@@ -1,14 +1,5 @@
 """
 
-# MPQ
-https://wow.curseforge.com/projects/mpqviewer/files # Have game closed
-
-# M2
-https://wow.curseforge.com/projects/project-3043 # Have game opened
-
-# DBC
-https://wowdev.wiki/DB/GameObjectDisplayInfo
-
 """
 import glob
 import io
