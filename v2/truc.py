@@ -75,6 +75,7 @@ def set_pretty_print_env(level=None):
     pd.set_option('display.max_colwidth', 260)
     pd.set_option('display.float_format', lambda x: '%.8f' % x)
     pd.set_option('display.max_columns', 25)
+    pd.set_option('display.max_rows', 125)
 
     # http://stackoverflow.com/a/7995762
     logging.addLevelName(logging.ERROR, "\033[1;41m%s\033[1;0m" % logging.getLevelName(logging.ERROR))
@@ -294,7 +295,8 @@ class GameObject:
             self.model_name = None
 
         q = self.quaternion * [-1, -1, -1, 1]
-        rot_matrix = [
+        # q = self.quaternion
+        rot_matrix = np.asarray([
 
             [1 - 2 * q[1] ** 2 - 2 * q[2] ** 2,
              2 * q[0] * q[1] - 2 * q[2] * q[3],
@@ -311,9 +313,43 @@ class GameObject:
              1 - 2 * q[0] ** 2 - 2 * q[1] ** 2,
              0],
             [0, 0, 0, 1],
-        ]
+        ])
 
-        self.model_matrix = rot_matrix @ translate(self.xyz)
+        # print(self.name, w.pull_floats(addr + 0x298, ()))
+        trans_mat = w.pull_floats(addr + 0x218, (4, 4))
+
+        if 'Arche' in self.name:
+            print('////////////////////')
+            print('old')
+            print(translate(self.xyz))
+            print('written')
+            print(trans_mat)
+            # trans_mat[:3, :3] = np.linalg.inv(trans_mat[:3, :3])
+            # print('written')
+            # print(trans_mat)
+            # print(rot_matrix)
+            # exit()
+        trans_mat[:3, :3] = np.linalg.inv(trans_mat[:3, :3])
+        # rot_matrix = np.linalg.inv(rot_matrix)
+
+        self.model_matrix = (
+            rot_matrix @
+            # trans_mat @
+            scale(w.pull_floats(addr + 0x298, ())) @
+            translate(self.xyz) @
+            np.eye(4)
+        )
+        # if w.pull_floats(addr + 0x298, ()) != 1:
+        #     print('////////////////////////////////////////////////////////////////////////////////')
+        #     print(self.name)
+        #     print(w.pull_floats(addr + 0x298, ()))
+        #     print(rot_matrix @ translate(self.xyz))
+        #     print(scale(w.pull_floats(addr + 0x298, ())) @ rot_matrix @ translate(self.xyz))
+        #     print('////////////////////////////////////////////////////////////////////////////////')
+
+        # print(self.name, scale(w.pull_floats(addr + 0x298, ())))
+        # 0x298
+
 
 def rot(angle, axis):
     m = np.eye(4)
@@ -334,9 +370,14 @@ def rot(angle, axis):
 
 def translate(xyz):
     m = np.eye(4)
+    # m[:3, 3] = xyz
     m[3, :3] = xyz
     return m
 
+def scale(f):
+    m = np.eye(4) * f
+    m[-1, -1] = 1
+    return m
 
 w = WoW()
 cam = Camera(w)
@@ -359,6 +400,7 @@ for go in list(w.gen_game_objects()):
     if any(
             s in go.name
             for s in [
+                    # 'Danat'
                     # 'Arch'
                     # 'lettre'
                     # 'Onyx', 'Fureur', 'Zep',
@@ -414,35 +456,35 @@ for go in list(w.gen_game_objects()):
             path = str(go.model_name).split("\\")[-1]
             path = path.replace('.MDX', '.m2').replace('.mdx', '.m2')
             path = os.path.join('Y:\\model.mpq', path)
-            m = M2(path)
+            if os.path.isfile(path):
+                m = M2(path)
 
-            for xyz in m.vertices.xyz:
-                xyz = np.r_[xyz, 1] @ go.model_matrix
-                assert xyz[-1] == 1
-                (x, y), visible, behind = cam.world_to_screen(xyz[:3])
-                if not behind:
-                    ax.add_patch(*patchify_points(
-                        [sg.Point(x, y),],
-                        radius=2.,
-                        fill=False,
-                        ec='black',
-                    ))
+                for xyz in m.vertices.xyz:
+                    xyz = np.r_[xyz, 1] @ go.model_matrix
+                    assert xyz[-1] == 1
+                    (x, y), visible, behind = cam.world_to_screen(xyz[:3])
+                    if not behind:
+                        ax.add_patch(*patchify_points(
+                            [sg.Point(x, y),],
+                            radius=2.,
+                            fill=False,
+                            ec='black',
+                        ))
 
 
-
-        o = 0
-        n = 50
-        # a = w.pull_floats(go.addr + o, (n,)) # + Offset.GameObject.xyz - 32 * 4, (n,))
-        # rows.append({
-        #     i: v
-        #     for i, v in enumerate(a)
-        # })
-
-        a = w.pull_u32s(go.addr + o, (n,)) # + Offset.GameObject.xyz - 32 * 4, (n,))
+        o = Offset.GameObject.xyz - 4 * 47
+        n = 40
+        a = w.pull_floats(go.addr + o, (n,)) # + Offset.GameObject.xyz - 32 * 4, (n,))
         rows.append({
-            f'{i * 4 + o:#05x}': int(v)
+            f'{i * 4 + o:#05x}': float(v)
             for i, v in enumerate(a)
         })
+
+        # a = w.pull_u32s(go.addr + o, (n,)) # + Offset.GameObject.xyz - 32 * 4, (n,))
+        # rows.append({
+        #     f'{i * 4 + o:#05x}': int(v)
+        #     for i, v in enumerate(a)
+        # })
 
 df = pd.DataFrame(rows).T
 
@@ -453,8 +495,8 @@ df = pd.DataFrame(rows).T
 
 # df = df[~df.isnull().any(axis=1)]
 # df['ptp'] = df.max(axis=1) - df.min(axis=1)
-# df.loc[17, :] = -42
-# df.loc[18, :] = -42
+df.loc['0x288', :] = -42
+df.loc['0x28c', :] = -42
 
 # df.index=
 
@@ -472,5 +514,5 @@ df = pd.DataFrame(rows).T
 # dff = dff[mask]
 
 
-# print(df)
+print(df)
 plt.show()
