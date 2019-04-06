@@ -42,6 +42,7 @@ https://wow.curseforge.com/projects/project-3043 # Have game opened
 https://wowdev.wiki/DB/GameObjectDisplayInfo
 
 """
+import os
 
 import numpy as np
 import pymem
@@ -53,6 +54,7 @@ import shapely.geometry as sg
 
 from dbc import GameObjectDisplayInfo
 from show import patchify_points
+from m2 import M2
 
 MAGIC_SCALE_FACTOR = 1 / 1.10 # TODO: Find the real formula
 SCREEN_SIZE = 1920, 1080 # TODO: Find in memory
@@ -357,6 +359,7 @@ for go in list(w.gen_game_objects()):
     if any(
             s in go.name
             for s in [
+                    # 'Arch'
                     # 'lettre'
                     # 'Onyx', 'Fureur', 'Zep',
                     # 'Banc',
@@ -407,6 +410,25 @@ for go in list(w.gen_game_objects()):
                         fill=False,
                         ec=c,
                     ))
+        if go.model_name is not None:
+            path = str(go.model_name).split("\\")[-1]
+            path = path.replace('.MDX', '.m2').replace('.mdx', '.m2')
+            path = os.path.join('Y:\\model.mpq', path)
+            m = M2(path)
+
+            for xyz in m.vertices.xyz:
+                xyz = np.r_[xyz, 1] @ go.model_matrix
+                assert xyz[-1] == 1
+                (x, y), visible, behind = cam.world_to_screen(xyz[:3])
+                if not behind:
+                    ax.add_patch(*patchify_points(
+                        [sg.Point(x, y),],
+                        radius=2.,
+                        fill=False,
+                        ec='black',
+                    ))
+
+
 
         o = 0
         n = 50

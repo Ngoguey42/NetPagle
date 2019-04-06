@@ -7,6 +7,13 @@ import os
 import numpy as np
 import pandas as pd
 
+def cache_to_self(met):
+    s = '_' + met.__name__ + '_cache'
+    def _f(self, *args, **kwargs):
+        if not hasattr(self, s):
+            setattr(self, s, met(self, *args, **kwargs))
+        return getattr(self, s)
+    return _f
 
 class M2:
 
@@ -15,8 +22,6 @@ class M2:
         assert self.magic == b'MD20', self.magic
         assert self.version == 256, self.version
         print(self.name, len(self.bts), self.fuss)
-        # assert np.all(self.fuss == [0, 0, 0]), self.fuss
-        # print(v)
 
         m = 0xec
         n = 40
@@ -25,8 +30,6 @@ class M2:
             'i': ['{:#x}'.format(v) for v in self.pull_u32s(m, n)],
             'f': self.pull_floats(m, n),
         }).set_index('a')
-        # print(df)
-
 
         mask = np.zeros(len(self.bts), int)
         def ff(a0, so):
@@ -40,15 +43,15 @@ class M2:
                 )
             )
             mask[sl] = a0
-            print(f'm2arr at {a0:#5x} pointing to [{a1:#7x}:{a1 + so * s:#7x}] '
-                  f'for {s:3} items of {so:2} bytes each. ({s * so:5} bytes total)')
+            # print(f'm2arr at {a0:#5x} pointing to [{a1:#7x}:{a1 + so * s:#7x}] '
+                  # f'for {s:3} items of {so:2} bytes each. ({s * so:5} bytes total)')
 
         ff(0x1c, 1)
         ff(0x24, 2)
         ff(0x2c, 4)
         ff(0x34, 1)
         ff(0x3c, 2)
-        ff(0x44, 12)
+        ff(0x44, 12 * 4)
         # print(self.pull_floats(self.pull_u32s(0x48), (52, 12)))
         ff(0x4c, 44)
         ff(0x54, 1)
@@ -77,6 +80,7 @@ class M2:
         ff(0x13c, 1)
         ff(0x144, 1)
 
+        # print(self.vertices)
 
     # Offsets *********************************************************************************** **
     @property
@@ -94,6 +98,22 @@ class M2:
     @property
     def fuss(self):
         return self.pull_u32s(0x10, 3)
+
+    @property
+    @cache_to_self
+    def vertices(self):
+        a = self.m2array(0x44, 12 * 4)
+        asfloat = np.frombuffer(a, 'float32').reshape(-1, 12)
+        asu8 = np.frombuffer(a, 'uint8').reshape(-1, 12 * 4)
+
+        df = pd.DataFrame({
+            'xyz': list(asfloat[:, 0:3]),
+            'bonew': list(asu8[:, 3 * 4:3 * 4 + 4]),
+            'bonei': list(asu8[:, 3 * 5:3 * 5 + 4]),
+            'nor': list(asfloat[:, 5:8]),
+            'tex': list(asfloat[:, 9:]),
+        })
+        return df
 
     # ******************************************************************************************* **
     def cstring_inarr(self, addr):
@@ -129,8 +149,9 @@ if __name__ == '__main__':
             # 'Y:\\model.mpq\\DarkshoreRuinPillar03.m2', # 52v
             # 'Y:\\model.mpq\\EyeOfKilrog.m2',
             # 'Y:\\model.mpq\\LandMine01.m2', # 48v, 84f
-            'Y:\\model.mpq\\Chicken.m2', # 21v, 40f
+            # 'Y:\\model.mpq\\Chicken.m2', # 21v, 40f
             # 'Y:\\model.mpq\\Buckler_Round_A_01.m2', # 21v, 40f
+            'Y:\\model.mpq\\PlaqueBronze02.m2',
 
             # p for p in glob.glob('Y:\\model.mpq\\*.m2')
             # if 'KelT' in p
