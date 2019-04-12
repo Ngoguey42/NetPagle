@@ -53,71 +53,9 @@ import pandas as pd
 import shapely.geometry as sg
 
 from dbc import GameObjectDisplayInfo
-from show import patchify_points
+from show import patchify_points, patchify_polys
 from m2 import M2
-
-MAGIC_SCALE_FACTOR = 1 / 1.0925 # TODO: Find the real formula
-SCREEN_SIZE = 1920, 1080 # TODO: Find in memory
-
-def set_pretty_print_env(level=None):
-    import logging
-    import numpy as np
-    import pandas as pd
-    import warnings
-
-    np.set_printoptions(linewidth=250, threshold=np.nan, suppress=True)
-
-    if level is None:
-        level = logging.DEBUG
-    logging.basicConfig(format='%(levelname)s:%(message)s', level=level)
-
-    pd.set_option('display.width', 260)
-    pd.set_option('display.max_colwidth', 260)
-    pd.set_option('display.float_format', lambda x: '%.8f' % x)
-    pd.set_option('display.max_columns', 25)
-    pd.set_option('display.max_rows', 125)
-
-    # http://stackoverflow.com/a/7995762
-    logging.addLevelName(logging.ERROR, "\033[1;41m%s\033[1;0m" % logging.getLevelName(logging.ERROR))
-    logging.addLevelName(logging.WARNING, "\033[1;31m%s\033[1;0m" % logging.getLevelName(logging.WARNING))
-    logging.addLevelName(logging.INFO, "\033[1;34m%s \033[1;0m" % logging.getLevelName(logging.INFO))
-    logging.addLevelName(logging.DEBUG, "\033[1;36m%s\033[1;0m" % logging.getLevelName(logging.DEBUG))
-
-    logging.getLogger('matplotlib').setLevel(logging.INFO)
-    warnings.filterwarnings("ignore", category=UserWarning, module="matplotlib")
-
-set_pretty_print_env()
-del set_pretty_print_env
-
-class Offset:
-    player_name = 0x827D88
-    obj_manager = 0x00741414
-    camera = 0x0074B2BC
-
-    class ObjectManager:
-        first_obj = 0xAC
-
-    class Object:
-        type = 0x14
-        next = 0x3C
-
-    class GameObject:
-        guid = 0x30
-        name1 = 0x214
-        name2 = 0x8
-        xyz = 0x2c4
-        angle = xyz + 3 * 4
-        quaternion = xyz - 5 * 4
-        display_id = 0x2a8
-        unknown_matrix = 0x218
-        scale = 0x298
-
-    class Camera:
-        offset = 0x65B8
-        xyz = 0x8
-        facing = xyz + 3 * 4
-        fov = xyz + 14 * 4
-        aspect = xyz + 15 * 4
+from constants import Offset, SCREEN_SIZE, MAGIC_SCALE_FACTOR
 
 class WoW:
     def __init__(self, pid=None, godi_path='Y:\\dbc\\GameObjectDisplayInfo.dbc'):
@@ -369,10 +307,10 @@ ax.imshow(img)
 rows = []
 jj = -1
 for go in list(w.gen_game_objects()):
-    if not any(
+    if any(
             s in go.name
             for s in [
-                    'Danat'
+                    # 'Danat'
                     # 'Arch'
                     # 'lettre'
                     # 'Onyx', 'Fureur', 'Zep',
@@ -397,33 +335,34 @@ for go in list(w.gen_game_objects()):
 
         mn = str(go.model_name).split("\\")[-1:]
         print(
-            f'{jj:2}{go.name:>30}: ('
+            f'{jj:2}{go.name:>50}: ('
             f'{ox:+7.2f}({dx})({xyz[0]:<10.2f}), '
             f'{oy:+7.2f}({dy})({xyz[1]:<10.2f}), '
             f'{xyz[2] - cam.xyz[2]:+7.2f}({xyz[2]:<6.2f})) '
             f'{(go.angle / np.pi * 180 + 360) % 360:5.1f}deg {mn}'
         )
-        ax.add_patch(*patchify_points(
-            [sg.Point(x, y),],
-            radius=4.,
-            fill=False,
-        ))
+        # ax.add_patch(*patchify_points(
+        #     [sg.Point(x, y),],
+        #     radius=4.,
+        #     fill=False,
+        # ))
         ax.text(x, y, jj, fontsize=10)
 
-        for i in range(3):
-            c = ['red', 'green', 'blue'][i]
-            for v in np.linspace(0, 1, 15):
-                xyz = np.r_[(np.arange(3) == i) * v, 1]
-                xyz = xyz @ go.model_matrix
-                assert xyz[-1] == 1
-                (x, y), visible, behind = cam.world_to_screen(xyz[:3])
-                if not behind:
-                    ax.add_patch(*patchify_points(
-                        [sg.Point(x, y),],
-                        radius=2.,
-                        fill=False,
-                        ec=c,
-                    ))
+        # for i in range(3):
+        #     c = ['red', 'green', 'blue'][i]
+        #     for v in np.linspace(0, 1, 15):
+        #         xyz = np.r_[(np.arange(3) == i) * v, 1]
+        #         xyz = xyz @ go.model_matrix
+        #         assert xyz[-1] == 1
+        #         (x, y), visible, behind = cam.world_to_screen(xyz[:3])
+        #         if not behind:
+        #             ax.add_patch(*patchify_points(
+        #                 [sg.Point(x, y),],
+        #                 radius=2.,
+        #                 fill=False,
+        #                 ec=c,
+        #             ))
+
         if go.model_name is not None:
             path = str(go.model_name).split("\\")[-1]
             path = path.replace('.MDX', '.m2').replace('.mdx', '.m2')
@@ -431,17 +370,52 @@ for go in list(w.gen_game_objects()):
             if os.path.isfile(path):
                 m = M2(path)
 
-                for xyz in m.vertices.xyz:
-                    xyz = np.r_[xyz, 1] @ go.model_matrix
-                    assert xyz[-1] == 1
-                    (x, y), visible, behind = cam.world_to_screen(xyz[:3])
-                    if not behind:
-                        ax.add_patch(*patchify_points(
-                            [sg.Point(x, y),],
-                            radius=2.,
-                            fill=False,
-                            ec='black',
-                        ))
+                for a, b, c in m.last_lod:
+                    a, avisible, abehind = cam.world_to_screen(
+                        (np.r_[m.vertices.xyz[a], 1] @ go.model_matrix)[:3]
+                    )
+                    if abehind: # hello
+                        continue
+                    b, bvisible, bbehind = cam.world_to_screen(
+                        (np.r_[m.vertices.xyz[b], 1] @ go.model_matrix)[:3]
+                    )
+                    if bbehind: # hello
+                        continue
+                    c, cvisible, cbehind = cam.world_to_screen(
+                        (np.r_[m.vertices.xyz[c], 1] @ go.model_matrix)[:3]
+                    )
+                    if cbehind: # hello
+                        continue
+                    p = sg.Polygon([a, b, c])
+                    # print(a, b, c, p.exterior.is_ccw)
+
+                    if not p.exterior.is_ccw:
+                            ax.add_patch(*patchify_polys(
+                                p,
+                                fill=False,
+                                hatch=False,
+                                ec='black',
+                                lw=1,
+                            ))
+
+                        # ax.add_patch(*patchify_points(
+                        #     [sg.Point(*c),],
+                        #     radius=2.,
+                        #     fill=False,
+                        #     ec='black',
+                        # ))
+
+                # for xyz in m.vertices.xyz:
+                #     xyz = np.r_[xyz, 1] @ go.model_matrix
+                #     assert xyz[-1] == 1
+                #     (x, y), visible, behind = cam.world_to_screen(xyz[:3])
+                #     if not behind:
+                #         ax.add_patch(*patchify_points(
+                #             [sg.Point(x, y),],
+                #             radius=2.,
+                #             fill=False,
+                #             ec='black',
+                #         ))
 
 
         o = Offset.GameObject.xyz - 4 * 47
@@ -486,5 +460,5 @@ df.loc['0x28c', :] = -42
 # dff = dff[mask]
 
 
-print(df)
+# print(df)
 plt.show()

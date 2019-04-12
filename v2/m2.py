@@ -7,6 +7,10 @@ import os
 import numpy as np
 import pandas as pd
 
+def print(*args):
+    pass
+
+
 def cache_to_self(met):
     s = '_' + met.__name__ + '_cache'
     def _f(self, *args, **kwargs):
@@ -18,6 +22,7 @@ def cache_to_self(met):
 class M2:
 
     def __init__(self, path):
+
         self.bts = open(path, 'rb').read()
         assert self.magic == b'MD20', self.magic
         assert self.version == 256, self.version
@@ -52,7 +57,6 @@ class M2:
         ff(0x34, 1)
         ff(0x3c, 2)
         ff(0x44, 12 * 4)
-        # print(self.pull_floats(self.pull_u32s(0x48), (52, 12)))
         ff(0x4c, 44)
         ff(0x54, 1)
         ff(0x5c, 1)
@@ -80,22 +84,21 @@ class M2:
         ff(0x13c, 1)
         ff(0x144, 1)
 
-        # print(self.vertices)
         s, a0 = self.pull_u32s(0x4c, 2)
-        for i in range(s):
+        # for i in range(s):
+        i = s - 1
+        if True:
             print(f'Skin profile {i}')
             a1 = a0 + i * 44
             ff(a1 + 0x00, 2)
 
             arr = self.m2array(a1 + 0x00, 2)
             asu8 = np.frombuffer(arr, 'uint16')
-            # print(asu8)
 
             ff(a1 + 0x08, 2)
 
             arr = self.m2array(a1 + 0x08, 2)
             asu8 = np.frombuffer(arr, 'uint16')
-            # print(asu8)
 
             ff(a1 + 0x10, 4)
             ff(a1 + 0x18, 32)
@@ -107,6 +110,18 @@ class M2:
         print(mask.sum(), len(self.bts))
 
     # Offsets *********************************************************************************** **
+    @property
+    @cache_to_self
+    def last_lod(self):
+        lod_count, lod0_addr = self.pull_u32s(0x4c, 2)
+        lod_addr = lod0_addr + 0x2c * (lod_count - 1)
+
+        pts = np.frombuffer(self.m2array(lod_addr + 0x0, 2), 'uint16')
+        faces = np.frombuffer(self.m2array(lod_addr + 0x8, 2), 'uint16').reshape(-1, 3)
+        faces = pts[faces]
+
+        return faces
+
     @property
     def magic(self):
         return self.bts[:4]
@@ -175,13 +190,16 @@ if __name__ == '__main__':
             # 'Y:\\model.mpq\\LandMine01.m2', # 48v, 84f
             # 'Y:\\model.mpq\\Chicken.m2',
             # 'Y:\\model.mpq\\Buckler_Round_A_01.m2', # 21v, 40f
-            # 'Y:\\model.mpq\\PlaqueBronze02.m2',
+            'Y:\\model.mpq\\PlaqueBronze02.m2',
 
-            p for p in glob.glob('Y:\\model.mpq\\*.m2')
-            if 'KelT' in p
+            # p for p in glob.glob('Y:\\model.mpq\\*.m2')
+            # if 'KelT' in p
     ]:
         m = M2(path)
         print('////////////////////////////////////////////////////////////////////////////////')
+        # df = m.last_lod.shape
+        print(m.last_lod)
+
 # raw = open(path, 'rb').read()
 # raw = raw[:256]
 # print(len(raw))
