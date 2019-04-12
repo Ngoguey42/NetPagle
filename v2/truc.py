@@ -56,7 +56,7 @@ from dbc import GameObjectDisplayInfo
 from show import patchify_points
 from m2 import M2
 
-MAGIC_SCALE_FACTOR = 1 / 1.10 # TODO: Find the real formula
+MAGIC_SCALE_FACTOR = 1 / 1.0925 # TODO: Find the real formula
 SCREEN_SIZE = 1920, 1080 # TODO: Find in memory
 
 def set_pretty_print_env(level=None):
@@ -109,6 +109,8 @@ class Offset:
         angle = xyz + 3 * 4
         quaternion = xyz - 5 * 4
         display_id = 0x2a8
+        unknown_matrix = 0x218
+        scale = 0x298
 
     class Camera:
         offset = 0x65B8
@@ -295,7 +297,6 @@ class GameObject:
             self.model_name = None
 
         q = self.quaternion * [-1, -1, -1, 1]
-        # q = self.quaternion
         rot_matrix = np.asarray([
 
             [1 - 2 * q[1] ** 2 - 2 * q[2] ** 2,
@@ -314,42 +315,14 @@ class GameObject:
              0],
             [0, 0, 0, 1],
         ])
-
-        # print(self.name, w.pull_floats(addr + 0x298, ()))
-        trans_mat = w.pull_floats(addr + 0x218, (4, 4))
-
-        if 'Arche' in self.name:
-            print('////////////////////')
-            print('old')
-            print(translate(self.xyz))
-            print('written')
-            print(trans_mat)
-            # trans_mat[:3, :3] = np.linalg.inv(trans_mat[:3, :3])
-            # print('written')
-            # print(trans_mat)
-            # print(rot_matrix)
-            # exit()
-        trans_mat[:3, :3] = np.linalg.inv(trans_mat[:3, :3])
-        # rot_matrix = np.linalg.inv(rot_matrix)
+        trans_mat = w.pull_floats(addr + Offset.GameObject.unknown_matrix, (4, 4))
 
         self.model_matrix = (
             rot_matrix @
-            # trans_mat @
-            scale(w.pull_floats(addr + 0x298, ())) @
+            scale(w.pull_floats(addr + Offset.GameObject.scale, ())) @
             translate(self.xyz) @
             np.eye(4)
         )
-        # if w.pull_floats(addr + 0x298, ()) != 1:
-        #     print('////////////////////////////////////////////////////////////////////////////////')
-        #     print(self.name)
-        #     print(w.pull_floats(addr + 0x298, ()))
-        #     print(rot_matrix @ translate(self.xyz))
-        #     print(scale(w.pull_floats(addr + 0x298, ())) @ rot_matrix @ translate(self.xyz))
-        #     print('////////////////////////////////////////////////////////////////////////////////')
-
-        # print(self.name, scale(w.pull_floats(addr + 0x298, ())))
-        # 0x298
-
 
 def rot(angle, axis):
     m = np.eye(4)
@@ -370,7 +343,6 @@ def rot(angle, axis):
 
 def translate(xyz):
     m = np.eye(4)
-    # m[:3, 3] = xyz
     m[3, :3] = xyz
     return m
 
@@ -397,10 +369,10 @@ ax.imshow(img)
 rows = []
 jj = -1
 for go in list(w.gen_game_objects()):
-    if any(
+    if not any(
             s in go.name
             for s in [
-                    # 'Danat'
+                    'Danat'
                     # 'Arch'
                     # 'lettre'
                     # 'Onyx', 'Fureur', 'Zep',
@@ -420,7 +392,7 @@ for go in list(w.gen_game_objects()):
 
     (x, y), visible, behind = cam.world_to_screen(xyz[:3])
 
-    if visible:
+    if not behind:
         jj += 1
 
         mn = str(go.model_name).split("\\")[-1:]

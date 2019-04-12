@@ -43,8 +43,8 @@ class M2:
                 )
             )
             mask[sl] = a0
-            # print(f'm2arr at {a0:#5x} pointing to [{a1:#7x}:{a1 + so * s:#7x}] '
-                  # f'for {s:3} items of {so:2} bytes each. ({s * so:5} bytes total)')
+            print(f'm2arr at {a0:#5x} pointing to [{a1:#7x}:{a1 + so * s:#7x}] '
+                  f'for {s:3} items of {so:2} bytes each. ({s * so:5} bytes total)')
 
         ff(0x1c, 1)
         ff(0x24, 2)
@@ -81,6 +81,30 @@ class M2:
         ff(0x144, 1)
 
         # print(self.vertices)
+        s, a0 = self.pull_u32s(0x4c, 2)
+        for i in range(s):
+            print(f'Skin profile {i}')
+            a1 = a0 + i * 44
+            ff(a1 + 0x00, 2)
+
+            arr = self.m2array(a1 + 0x00, 2)
+            asu8 = np.frombuffer(arr, 'uint16')
+            # print(asu8)
+
+            ff(a1 + 0x08, 2)
+
+            arr = self.m2array(a1 + 0x08, 2)
+            asu8 = np.frombuffer(arr, 'uint16')
+            # print(asu8)
+
+            ff(a1 + 0x10, 4)
+            ff(a1 + 0x18, 32)
+            ff(a1 + 0x20, 24)
+            print(self.pull_u32s(a1 + 0x24))
+
+        mask = (mask != 0)
+        print(mask.mean())
+        print(mask.sum(), len(self.bts))
 
     # Offsets *********************************************************************************** **
     @property
@@ -149,12 +173,12 @@ if __name__ == '__main__':
             # 'Y:\\model.mpq\\DarkshoreRuinPillar03.m2', # 52v
             # 'Y:\\model.mpq\\EyeOfKilrog.m2',
             # 'Y:\\model.mpq\\LandMine01.m2', # 48v, 84f
-            # 'Y:\\model.mpq\\Chicken.m2', # 21v, 40f
+            # 'Y:\\model.mpq\\Chicken.m2',
             # 'Y:\\model.mpq\\Buckler_Round_A_01.m2', # 21v, 40f
-            'Y:\\model.mpq\\PlaqueBronze02.m2',
+            # 'Y:\\model.mpq\\PlaqueBronze02.m2',
 
-            # p for p in glob.glob('Y:\\model.mpq\\*.m2')
-            # if 'KelT' in p
+            p for p in glob.glob('Y:\\model.mpq\\*.m2')
+            if 'KelT' in p
     ]:
         m = M2(path)
         print('////////////////////////////////////////////////////////////////////////////////')
