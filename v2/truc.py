@@ -41,6 +41,9 @@ https://wow.curseforge.com/projects/project-3043 # Have game opened
 ##### DBC files
 https://wowdev.wiki/DB/GameObjectDisplayInfo
 
+http://www.pudn.com/Download/item/id/101052.html
+
+
 """
 import os
 
@@ -292,6 +295,10 @@ def scale(f):
 w = WoW()
 cam = Camera(w)
 
+rows = []
+jj = -1
+it = list(w.gen_game_objects())
+
 print('  Snapping...')
 with mss.mss() as sct:
     monitor = sct.monitors[1]
@@ -304,20 +311,19 @@ fig = plt.figure()
 ax = fig.add_subplot(111)
 ax.imshow(img)
 
-rows = []
-jj = -1
-for go in list(w.gen_game_objects()):
-    if any(
-            s in go.name
-            for s in [
-                    # 'Danat'
-                    # 'Arch'
-                    # 'lettre'
-                    # 'Onyx', 'Fureur', 'Zep',
-                    # 'Banc',
-            ]
-    ):
+for go in it:
+    bl = [
+        # 'Chaise en',
+        # 'lettres'
+    ]
+    wl = [
+        'Flot'
+    ]
+    if bl and any(s in go.name for s in bl):
         continue
+    if wl and not any(s in go.name for s in wl):
+        continue
+
     xyz = (0, 0, 0, 1)
     xyz = xyz @ go.model_matrix
     assert xyz[-1] == 1
@@ -369,6 +375,9 @@ for go in list(w.gen_game_objects()):
             path = os.path.join('Y:\\model.mpq', path)
             if os.path.isfile(path):
                 m = M2(path)
+
+                print(m.last_lod.shape)
+
 
                 for a, b, c in m.last_lod:
                     a, avisible, abehind = cam.world_to_screen(
