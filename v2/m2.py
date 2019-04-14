@@ -9,8 +9,9 @@ import pandas as pd
 
 import constants
 
+_print = print
 # def print(*args):
-#     pass
+    # pass
 
 def cache_to_self(met):
     s = '_' + met.__name__ + '_cache'
@@ -24,6 +25,11 @@ def cache_to_self(met):
 class M2:
 
     def __init__(self, path):
+
+
+        # def print(*args):
+        #     pass
+
 
         self.bts = open(path, 'rb').read()
         assert self.magic == b'MD20', self.magic
@@ -54,7 +60,7 @@ class M2:
             )
             mask[sl] = a0
             bcount = s * so
-            # if bcount > 8:
+
             if a0 != 0x84:
                 print(f'm2arr at {a0:#5x} pointing to [{a1:#7x}:{a1 + so * s:#7x}] '
                       f'for {s:3} items of {so:2} bytes each. ({bcount:5} bytes total)')
@@ -157,38 +163,70 @@ class M2:
     @property
     @cache_to_self
     def last_lod(self):
+        """Return a list of data about each `G.skin_profiles[-1].submeshes[i]` for each `i`.
+
+        G.skin_profiles[i].submeshes[i].skinSectionId # https://wowdev.wiki/M2/.skin#Mesh_part_ID
+        G.skin_profiles[i].batches[i].materialIndex https://wowdev.wiki/M2/.skin#Texture_units
+        G.skin_profiles[i].batches[i].skinSectionIndex https://wowdev.wiki/M2/.skin#Submeshes
+        G.materials[i].flags & 0x4 https://wowdev.wiki/M2#Render_flags
+        """
+
         lod_v = self.arr_entry_views(0x4c, 0x2c)[-1]
         pts_idxs_v = self.arr_view(lod_v.addr + 0x0, 2)
         faces_idxs_v = self.arr_view(lod_v.addr + 0x8, 2)
+        submesh_vs = self.arr_entry_views(lod_v.addr + 0x18, 32)
+        texunit_vs = self.arr_entry_views(lod_v.addr + 0x20, 24)
+        renderflags_vs = self.arr_entry_views(0x84, 4)
 
-        faces = pts_idxs_v.asu16[faces_idxs_v.asu16.reshape(-1, 3)]
-        return faces
+        texunit_v_per_submesh_idx = {
+            texunit_v.asu16[2]: texunit_v
+            for texunit_v in texunit_vs
+        }
 
-        lod_count, lod0_addr = self.pull_u32s(0x4c, 2)
-        lod_addr = lod0_addr + 0x2c * (lod_count - 1)
+        assert len(submesh_vs) <= len(texunit_vs), (len(submesh_vs), len(texunit_vs))
 
-        pts = np.frombuffer(self.m2array(lod_addr + 0x0, 2), 'uint16')
-        faces = np.frombuffer(self.m2array(lod_addr + 0x8, 2), 'uint16').reshape(-1, 3)
-        faces = pts[faces]
+        faces = pts_idxs_v.asu16[faces_idxs_v.asu16]
+        res = []
+        print('faces', faces.shape,
+              'pts', pts_idxs_v.asu16.shape,
+              'submesh_vs', len(submesh_vs),
+              'texunit_vs', len(texunit_vs),
+              'renderflags_vs', len(renderflags_vs),
+        )
 
-        # ff(a1 + 0x18, 32) # Submeshes
+        for i, submesh_v in enumerate(submesh_vs):
 
-        submeshes_bts = self.m2array(lod_addr + 0x18, 32)
+            pts_slice = slice(
+                int(submesh_v.asu16[2]),
+                int(submesh_v.asu16[2]) + int(submesh_v.asu16[3]),
+            )
+            faces_slice = slice(
+                int(submesh_v.asu16[4]) | (int(submesh_v.asu16[1]) << 16),
+                (int(submesh_v.asu16[4]) | (int(submesh_v.asu16[1]) << 16)) + int(submesh_v.asu16[5]),
+            )
 
-        # a = self.m2array(0x44, 12 * 4)
-        asfloat = np.frombuffer(submeshes_bts, 'float32').reshape(-1, 12)
-        asu16 = np.frombuffer(submeshes_bts, 'uint16').reshape(-1, 12 * 4)
+            # print(submesh_v)
+            # if submesh_v.asu16[0] >= len(texunit_vs):
+                # _print(f'skinSectionId is {submesh_v.asu16[0]}, how to render {self.name}??')
+                # continue
+            # texunit_v = texunit_vs[submesh_v.asu16[0]]
+            texunit_v = texunit_v_per_submesh_idx[i]
+            render_flags = renderflags_vs[texunit_v.asu16[5]].asu16[0]
 
+            print(f'  submesh{i}, render_flags:{render_flags:#b}, pts-slice:{pts_slice}, faces_slice:{faces_slice}')
 
-        # G.skin_profiles[i].submeshes[i].skinSectionId # https://wowdev.wiki/M2/.skin#Submeshes
-        # G.skin_profiles[i].batches[i].materialIndex https://wowdev.wiki/M2/.skin#Texture_units
-        # G.materials[i].flags & 0x4 # https://wowdev.wiki/M2#Render_flags
+            assert pts_slice.stop <= pts_idxs_v.asu16.size
+            assert faces_slice.stop <= faces.size
 
-        submeshes = [
+            res.append(pd.Series({
+                'pts_idxs': faces[faces_slice].reshape(-1, 3),
+                'render_flags': render_flags,
+            }))
+        if submesh_vs:
+            assert pts_slice.stop == pts_idxs_v.asu16.size
+            assert faces_slice.stop == faces.size
 
-        ]
-
-        return faces
+        return res
 
     @property
     def magic(self):
@@ -256,7 +294,6 @@ class M2:
     # ******************************************************************************************* **
 
 if __name__ == '__main__':
-    print('////////////////////////////////////////////////////////////////////////////////')
     for path in [
             # 'Y:\\model.mpq\\LShoulder_Plate_C_05.m2',
             # 'Y:\\model.mpq\\DarkshoreRuinPillar03.m2', # 52v
@@ -265,17 +302,20 @@ if __name__ == '__main__':
             # 'Y:\\model.mpq\\Chicken.m2',
             # 'Y:\\model.mpq\\Buckler_Round_A_01.m2', # 21v, 40f
             # 'Y:\\model.mpq\\PlaqueBronze02.m2',
-            'Y:\\model.mpq\\G_FishingBobber.m2',
+            # 'Y:\\model.mpq\\G_FishingBobber.m2',
 
 
-            # p for p in glob.glob('Y:\\model.mpq\\*.m2')
+            p for p in glob.glob('Y:\\model.mpq\\*.m2')
             # if 'KelT' in p
+            # if 'Banshee' in p
     ]:
-        m = M2(path)
         print('////////////////////////////////////////////////////////////////////////////////')
+        print(path)
+        m = M2(path)
         # df = m.last_lod.shape
         print(m.last_lod)
         # print(m.vertices)
+    print('////////////////////////////////////////////////////////////////////////////////')
 
 
 # raw = open(path, 'rb').read()

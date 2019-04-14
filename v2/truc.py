@@ -46,12 +46,14 @@ http://www.pudn.com/Download/item/id/101052.html
 
 """
 import os
+import itertools
 
 import numpy as np
 import pymem
 import psutil
 import mss
 import matplotlib.pyplot as plt
+import matplotlib.cm
 import pandas as pd
 import shapely.geometry as sg
 
@@ -314,9 +316,9 @@ ax.imshow(img)
 for go in it:
     bl = [
         # 'Chaise en',
-        # 'lettres'
     ]
     wl = [
+        # 'lettres'
         'Flot'
     ]
     if bl and any(s in go.name for s in bl):
@@ -371,60 +373,42 @@ for go in it:
 
         if go.model_name is not None:
             path = str(go.model_name).split("\\")[-1]
+            # path = 'Banshee.m2'
+            # path = 'KelThuzad.m2'
+
             path = path.replace('.MDX', '.m2').replace('.mdx', '.m2')
             path = os.path.join('Y:\\model.mpq', path)
             if os.path.isfile(path):
                 m = M2(path)
 
-                print(m.last_lod.shape)
+                colors = matplotlib.cm.rainbow(np.linspace(0, 1, len(m.last_lod)))
+                for submesh, color in zip(m.last_lod, colors):
+                    for a, b, c in submesh.pts_idxs:
+                        a, avisible, abehind = cam.world_to_screen(
+                            (np.r_[m.vertices.xyz[a], 1] @ go.model_matrix)[:3]
+                        )
+                        if abehind: # hello
+                            continue
+                        b, bvisible, bbehind = cam.world_to_screen(
+                            (np.r_[m.vertices.xyz[b], 1] @ go.model_matrix)[:3]
+                        )
+                        if bbehind: # hello
+                            continue
+                        c, cvisible, cbehind = cam.world_to_screen(
+                            (np.r_[m.vertices.xyz[c], 1] @ go.model_matrix)[:3]
+                        )
+                        if cbehind: # hello
+                            continue
+                        p = sg.Polygon([a, b, c])
 
-
-                for a, b, c in m.last_lod:
-                    a, avisible, abehind = cam.world_to_screen(
-                        (np.r_[m.vertices.xyz[a], 1] @ go.model_matrix)[:3]
-                    )
-                    if abehind: # hello
-                        continue
-                    b, bvisible, bbehind = cam.world_to_screen(
-                        (np.r_[m.vertices.xyz[b], 1] @ go.model_matrix)[:3]
-                    )
-                    if bbehind: # hello
-                        continue
-                    c, cvisible, cbehind = cam.world_to_screen(
-                        (np.r_[m.vertices.xyz[c], 1] @ go.model_matrix)[:3]
-                    )
-                    if cbehind: # hello
-                        continue
-                    p = sg.Polygon([a, b, c])
-                    # print(a, b, c, p.exterior.is_ccw)
-
-                    if not p.exterior.is_ccw:
+                        if submesh.render_flags & 0x4 or not p.exterior.is_ccw:
                             ax.add_patch(*patchify_polys(
                                 p,
                                 fill=False,
                                 hatch=False,
-                                ec='black',
+                                ec=color,
                                 lw=1,
                             ))
-
-                        # ax.add_patch(*patchify_points(
-                        #     [sg.Point(*c),],
-                        #     radius=2.,
-                        #     fill=False,
-                        #     ec='black',
-                        # ))
-
-                # for xyz in m.vertices.xyz:
-                #     xyz = np.r_[xyz, 1] @ go.model_matrix
-                #     assert xyz[-1] == 1
-                #     (x, y), visible, behind = cam.world_to_screen(xyz[:3])
-                #     if not behind:
-                #         ax.add_patch(*patchify_points(
-                #             [sg.Point(x, y),],
-                #             radius=2.,
-                #             fill=False,
-                #             ec='black',
-                #         ))
 
 
         o = Offset.GameObject.xyz - 4 * 47
