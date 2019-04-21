@@ -10,8 +10,8 @@ import pandas as pd
 import constants
 
 _print = print
-# def print(*args):
-    # pass
+def print(*args):
+    pass
 
 def cache_to_self(met):
     s = '_' + met.__name__ + '_cache'

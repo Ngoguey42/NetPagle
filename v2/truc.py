@@ -49,250 +49,18 @@ import os
 import itertools
 
 import numpy as np
-import pymem
-import psutil
 import mss
 import matplotlib.pyplot as plt
 import matplotlib.cm
 import pandas as pd
 import shapely.geometry as sg
 
-from dbc import GameObjectDisplayInfo
 from show import patchify_points, patchify_polys
 from m2 import M2
+from wow import WoW
+from cam import Camera
+from objects import GameObject
 from constants import Offset, SCREEN_SIZE, MAGIC_SCALE_FACTOR
-
-class WoW:
-    def __init__(self, pid=None, godi_path='Y:\\dbc\\GameObjectDisplayInfo.dbc'):
-        if pid is None:
-            pid, = [ps.pid for ps in psutil.process_iter() if ps.name() == 'WoW.exe']
-
-        pm = pymem.Pymem()
-        pm.open_process_from_id(pid)
-        self.pid = pid
-        self.pm = pm
-
-        mod, = [mod for mod in pm.list_modules() if mod.name == 'WoW.exe']
-        base_address = mod.lpBaseOfDll
-        obj_mgr_addr = pm.read_uint(base_address + Offset.obj_manager)
-        first_obj_addr = pm.read_uint(obj_mgr_addr + Offset.ObjectManager.first_obj)
-
-        self.mod = mod
-        self.base_address = base_address
-        self.player_name = pm.read_string(self.base_address + Offset.player_name)
-        self.first_obj_addr = first_obj_addr
-
-        self.godi = GameObjectDisplayInfo(godi_path)
-
-    def pull_floats(self, addr, shape):
-        a = np.empty(shape, 'float32')
-        for i, idxs in enumerate(np.ndindex(*shape)):
-            a[idxs] = self.pm.read_float(addr + i * 4)
-        return a.astype('float64')
-
-    def pull_u32s(self, addr, shape):
-        a = np.empty(shape, 'uint32')
-        for i, idxs in enumerate(np.ndindex(*shape)):
-            a[idxs] = self.pm.read_uint(addr + i * 4)
-        return a
-
-    def gen_objects(self):
-        obj_addr = self.first_obj_addr
-        while True:
-            if not (obj_addr != 0 and obj_addr & 0x1 == 0):
-                break
-            yield obj_addr
-            next_addr = self.pm.read_uint(obj_addr + Offset.Object.next)
-            if next_addr == obj_addr:
-                break
-            obj_addr = next_addr
-
-    def gen_game_objects(self):
-        for obj_addr in self.gen_objects():
-            if self.pm.read_int(obj_addr + Offset.Object.type) == 5:
-                yield GameObject(self, obj_addr)
-
-class Camera():
-    def __init__(self, w):
-        cam0 = w.pm.read_uint(w.base_address + Offset.camera)
-        cam1 = w.pm.read_uint(cam0 + Offset.Camera.offset)
-
-        self.xyz = w.pull_floats(cam1 + Offset.Camera.xyz, (3,))
-        self.facing = w.pull_floats(cam1 + Offset.Camera.facing, (3, 3))
-        self.fov = w.pull_floats(cam1 + Offset.Camera.fov, ())
-        self.aspect = w.pull_floats(cam1 + Offset.Camera.aspect, ())
-        self.size = np.asarray(SCREEN_SIZE)
-        assert np.allclose(self.aspect, np.divide.reduce(self.size.astype(float)))
-
-    def world_to_screen(self, xyz):
-        diff = xyz - self.xyz
-        """
-        At this point:
-        - Origin is the center of the screen
-        - Unit vector is a yard long
-        - Axes are right handed
-               z-axis (sky)
-                  ^
-                  |  7 x-axis (north)
-                  | /
-         y-axis   |/
-          <-------+
-        (west)
-        """
-
-        view = diff @ np.linalg.inv(self.facing)
-        """
-        At this point:
-        - Origin is the center of the screen
-        - Unit vector is ~a yard long
-        - Axes are right handed
-               z-axis (top of the screen)
-                  ^
-                  |  7 x-axis (depth)
-                  | /
-         y-axis   |/
-          <-------+
-        (left of the screen)
-        """
-
-        cam = np.asarray([-view[1], -view[2], view[0]])
-        """
-        At this point:
-        - Origin is the center of the screen
-        - Unit vector is a yard long
-        - Axes are right handed
-            7 z-axis (depth)
-           /
-          /      x-axis
-         +--------->
-         |    (right of the screen)
-         |
-         |
-         v  y-axis
-        (bottom of the screen)
-        """
-
-        fov_x = (1 / (1 + 1 / self.aspect ** 2)) ** 0.5
-        fov_y = fov_x / self.aspect
-        fov_x *= self.fov
-        fov_y *= self.fov
-        fov_x *= MAGIC_SCALE_FACTOR
-
-        screen_right_at_unit_depth = np.tan(fov_x / 2)
-        screen_bottom_at_unit_depth = np.tan(fov_y / 2)
-
-        screen_right_at_point_depth = screen_right_at_unit_depth * cam[2]
-        screen_bottom_at_point_depth = screen_bottom_at_unit_depth * cam[2]
-
-        screen = np.asarray([
-            cam[0] / screen_right_at_point_depth,
-            cam[1] / screen_bottom_at_point_depth,
-        ])
-        """
-        At this point:
-        - Origin is the center of the screen
-        - Unit vector is half of the screen
-                 x-axis
-         +--------->
-         |    (right of the screen)
-         |
-         |
-         v  y-axis
-        (bottom of the screen)
-        """
-
-        raster = self.size / 2 * (1 + screen)
-        """
-        At this point:
-        - Origin is the top left of the screen
-        - Unit vector is a pixel
-                 x-axis
-         +--------->
-         |    (right of the screen)
-         |
-         |
-         v  y-axis
-        (bottom of the screen)
-        """
-
-        behind = cam[2] < 0
-        visible = np.all(np.abs(screen) <= 1) and not behind
-        return raster, visible, behind
-
-class GameObject:
-    def __init__(self, w, addr):
-        assert w.pm.read_int(addr + Offset.Object.type) == 5
-        self.addr = addr
-        a = addr
-        a += Offset.GameObject.name1
-        a = w.pm.read_uint(a)
-        a += Offset.GameObject.name2
-        a = w.pm.read_uint(a)
-        self.name = w.pm.read_string(a)
-        self.xyz = w.pull_floats(addr + Offset.GameObject.xyz, (3,))
-        self.angle = w.pull_floats(addr + Offset.GameObject.angle, ())
-        self.quaternion = w.pull_floats(addr + Offset.GameObject.quaternion, (4,)) # i, j, k, real
-
-        self.display_id = w.pm.read_uint(addr + Offset.GameObject.display_id)
-        if self.display_id in w.godi.df.index:
-            self.model_name = w.godi.df.loc[self.display_id, 'model']
-        else:
-            self.model_name = None
-
-        q = self.quaternion * [-1, -1, -1, 1]
-        rot_matrix = np.asarray([
-
-            [1 - 2 * q[1] ** 2 - 2 * q[2] ** 2,
-             2 * q[0] * q[1] - 2 * q[2] * q[3],
-             2 * q[0] * q[2] + 2 * q[1] * q[3],
-             0],
-
-            [2 * q[0] * q[1] + 2 * q[2] * q[3],
-             1 - 2 * q[0] ** 2 - 2 * q[2] ** 2,
-             2 * q[1] * q[2] - 2 * q[0] * q[3],
-             0],
-
-            [2 * q[0] * q[2] - 2 * q[1] * q[3],
-             2 * q[1] * q[2] + 2 * q[0] * q[3],
-             1 - 2 * q[0] ** 2 - 2 * q[1] ** 2,
-             0],
-            [0, 0, 0, 1],
-        ])
-        trans_mat = w.pull_floats(addr + Offset.GameObject.unknown_matrix, (4, 4))
-
-        self.model_matrix = (
-            rot_matrix @
-            scale(w.pull_floats(addr + Offset.GameObject.scale, ())) @
-            translate(self.xyz) @
-            np.eye(4)
-        )
-
-def rot(angle, axis):
-    m = np.eye(4)
-    for i in {0, 1, 2} - {axis}:
-        m[i, i] = np.cos(angle)
-    if axis == 0:
-        m[1, 2] = -np.sin(angle)
-        m[2, 1] = np.sin(angle)
-    elif axis == 1:
-        m[0, 2] = np.sin(angle)
-        m[2, 0] = -np.sin(angle)
-    elif axis == 2:
-        m[0, 1] = -np.sin(angle)
-        m[1, 0] = np.sin(angle)
-    else:
-        assert False
-    return m
-
-def translate(xyz):
-    m = np.eye(4)
-    m[3, :3] = xyz
-    return m
-
-def scale(f):
-    m = np.eye(4) * f
-    m[-1, -1] = 1
-    return m
 
 w = WoW()
 cam = Camera(w)
@@ -318,8 +86,8 @@ for go in it:
         # 'Chaise en',
     ]
     wl = [
-        # 'lettres'
-        'Flot'
+        'lettres'
+        # 'Flot'
     ]
     if bl and any(s in go.name for s in bl):
         continue
