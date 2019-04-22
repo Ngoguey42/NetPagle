@@ -23,13 +23,14 @@ class Player:
         del display_id_bis
 
         level = w.pull_u32s(addr + 0x01df8, ())
-        race = (w.pull_u32s(addr + 0x01e00, ()) >> 0) % 255
-        gender = (w.pull_u32s(addr + 0x01e00, ()) >> 16) % 255
+        race = (w.pull_u32s(addr + 0x01e00, ()) >> 0) % 256
+        gender = (w.pull_u32s(addr + 0x01e00, ()) >> 16) % 256
 
         if self.display_id in w.cmd.df.index:
             self.model_name = w.cmd.df.loc[self.display_id, 'model']
         else:
             self.model_name = None
+        print(level, race, gender, self.model_name)
 
         self.name = 'idk' # TODO: Find name!
 
