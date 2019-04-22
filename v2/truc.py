@@ -84,7 +84,7 @@ w = WoW()
 cam = Camera(w)
 
 it = []
-it += list(w.gen_game_objects())
+# it += list(w.gen_game_objects())
 it += list(w.gen_players())
 
 print('  Snapping...')
@@ -107,9 +107,9 @@ for go in it:
         # 'lettres'
         # 'Flot'
     ]
-    if bl and any(s in go.name for s in bl):
+    if bl and any(s.lower() in go.name.lower() for s in bl):
         continue
-    if wl and not any(s in go.name for s in wl):
+    if wl and not any(s.lower() in go.name.lower() for s in wl):
         continue
 
     xyz = (0, 0, 0, 1)
@@ -124,8 +124,8 @@ for go in it:
 
     (x, y), visible, behind = cam.world_to_screen(xyz[:3])
 
-    render = visible
-    # render = not behind
+    # render = visible
+    render = not behind
     # render = int(w.pull_u32s(go.addr + 0x18, ())) == 0x76005: # Myself
     mn = str(go.model_name).split("\\")[-1:]
 
@@ -139,66 +139,77 @@ for go in it:
             f'{(go.angle / np.pi * 180 + 360) % 360:5.1f}deg {mn}'
         )
 
-    if RENDER and render:
-        ax.text(x, y, jj, fontsize=10)
+    if not (RENDER and render):
+        continue
 
-        # for i in range(3):
-        #     c = ['red', 'green', 'blue'][i]
-        #     for v in np.linspace(0, 1, 15):
-        #         xyz = np.r_[(np.arange(3) == i) * v, 1]
-        #         xyz = xyz @ go.model_matrix
-        #         assert xyz[-1] == 1
-        #         (x, y), visible, behind = cam.world_to_screen(xyz[:3])
-        #         if not behind:
-        #             ax.add_patch(*patchify_points(
-        #                 [sg.Point(x, y),],
-        #                 radius=2.,
-        #                 fill=False,
-        #                 ec=c,
-        #             ))
+    ax.text(x, y, jj, fontsize=10)
 
-        if go.model_name is not None:
-            path = str(go.model_name).split("\\")[-1]
-            # path = 'Banshee.m2'
-            # path = 'KelThuzad.m2'
+    # for i in range(3):
+    #     c = ['red', 'green', 'blue'][i]
+    #     for v in np.linspace(0, 1, 15):
+    #         xyz = np.r_[(np.arange(3) == i) * v, 1]
+    #         xyz = xyz @ go.model_matrix
+    #         assert xyz[-1] == 1
+    #         (x, y), visible, behind = cam.world_to_screen(xyz[:3])
+    #         if not behind:
+    #             ax.add_patch(*patchify_points(
+    #                 [sg.Point(x, y),],
+    #                 radius=2.,
+    #                 fill=False,
+    #                 ec=c,
+    #             ))
 
-            path = path.replace('.MDX', '.m2').replace('.mdx', '.m2')
-            path = os.path.join('Y:\\model.mpq', path)
-            if os.path.isfile(path):
-                m = M2(path)
+    if go.model_name is None:
+        continue
 
-                colors = matplotlib.cm.rainbow(np.linspace(0, 1, len(m.last_lod)))
-                for submesh, color in zip(m.last_lod, colors):
+    path = str(go.model_name).split("\\")[-1]
+    # path = 'Banshee.m2'
+    # path = 'KelThuzad.m2'
 
-                    if submesh.mesh_part_id % 100 not in [0, 1]:
-                        continue
+    path = path.replace('.MDX', '.m2').replace('.mdx', '.m2')
+    path = os.path.join('Y:\\model.mpq', path)
 
-                    for a, b, c in submesh.pts_idxs:
-                        a, avisible, abehind = cam.world_to_screen(
-                            (np.r_[m.vertices.xyz[a], 1] @ go.model_matrix)[:3]
-                        )
-                        if abehind: # hello
-                            continue
-                        b, bvisible, bbehind = cam.world_to_screen(
-                            (np.r_[m.vertices.xyz[b], 1] @ go.model_matrix)[:3]
-                        )
-                        if bbehind: # hello
-                            continue
-                        c, cvisible, cbehind = cam.world_to_screen(
-                            (np.r_[m.vertices.xyz[c], 1] @ go.model_matrix)[:3]
-                        )
-                        if cbehind: # hello
-                            continue
-                        p = sg.Polygon([a, b, c])
+    if not os.path.isfile(path):
+        print("  Can't render, missing file".format())
+        continue
 
-                        if submesh.render_flags & 0x4 or not p.exterior.is_ccw:
-                            ax.add_patch(*patchify_polys(
-                                p,
-                                fill=False,
-                                hatch=False,
-                                ec=color,
-                                lw=1,
-                                alpha=0.5,
-                            ))
+    m = M2(path)
+
+    submeshes = [
+        submesh
+        for submesh in m.last_lod
+        if submesh.mesh_part_id % 100 in [0, 1]
+    ]
+    colors = matplotlib.cm.rainbow(np.linspace(0, 1, len(submeshes)))
+
+    for submesh, color in zip(submeshes, colors):
+        for a, b, c in submesh.pts_idxs:
+            a, avisible, abehind = cam.world_to_screen(
+                (np.r_[m.vertices.xyz[a], 1] @ go.model_matrix)[:3]
+            )
+            if abehind:
+                continue
+            b, bvisible, bbehind = cam.world_to_screen(
+                (np.r_[m.vertices.xyz[b], 1] @ go.model_matrix)[:3]
+            )
+            if bbehind:
+                continue
+            c, cvisible, cbehind = cam.world_to_screen(
+                (np.r_[m.vertices.xyz[c], 1] @ go.model_matrix)[:3]
+            )
+            if cbehind:
+                continue
+            p = sg.Polygon([a, b, c])
+
+            if submesh.render_flags & 0x4 or not p.exterior.is_ccw:
+                ax.add_patch(*patchify_polys(
+                    p,
+                    fill=False,
+                    hatch=False,
+                    ec=color,
+                    lw=1,
+                    alpha=0.5,
+                ))
+
 if RENDER:
     plt.show()
