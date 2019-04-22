@@ -20,7 +20,8 @@ def set_pretty_print_env(level=None):
     pd.set_option('display.max_colwidth', 260)
     pd.set_option('display.float_format', lambda x: '%.8f' % x)
     pd.set_option('display.max_columns', 25)
-    pd.set_option('display.max_rows', 125)
+    pd.set_option('display.max_rows', 210)
+    # pd.set_option('display.max_rows', 125)
 
     # http://stackoverflow.com/a/7995762
     logging.addLevelName(logging.ERROR, "\033[1;41m%s\033[1;0m" % logging.getLevelName(logging.ERROR))

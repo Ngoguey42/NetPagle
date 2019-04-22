@@ -10,6 +10,7 @@ import pandas as pd
 import constants
 
 _print = print
+
 def print(*args):
     pass
 
@@ -25,11 +26,6 @@ def cache_to_self(met):
 class M2:
 
     def __init__(self, path):
-
-
-        # def print(*args):
-        #     pass
-
 
         self.bts = open(path, 'rb').read()
         assert self.magic == b'MD20', self.magic
@@ -47,9 +43,6 @@ class M2:
         mask = np.zeros(len(self.bts), int)
         def ff(a0, so):
             s, a1 = self.pull_u32s(a0, 2)
-            # if a0 == 0x84:
-                # assert s <= 2, (self.name, s)
-
             sl = slice(a1, a1 + s * so)
             assert np.all(mask[sl] == 0), (
                 f'{a1:#x}',
@@ -113,8 +106,6 @@ class M2:
 
         s, a0 = self.pull_u32s(0x4c, 2)
         for i in range(s):
-        # i = s - 1
-        # if True:
             print(f'Skin profile {i}')
             a1 = a0 + i * 44
             ff(a1 + 0x00, 2)
@@ -165,10 +156,6 @@ class M2:
     def last_lod(self):
         """Return a list of data about each `G.skin_profiles[-1].submeshes[i]` for each `i`.
 
-        G.skin_profiles[i].submeshes[i].skinSectionId # https://wowdev.wiki/M2/.skin#Mesh_part_ID
-        G.skin_profiles[i].batches[i].materialIndex https://wowdev.wiki/M2/.skin#Texture_units
-        G.skin_profiles[i].batches[i].skinSectionIndex https://wowdev.wiki/M2/.skin#Submeshes
-        G.materials[i].flags & 0x4 https://wowdev.wiki/M2#Render_flags
         """
 
         lod_v = self.arr_entry_views(0x4c, 0x2c)[-1]
@@ -205,11 +192,6 @@ class M2:
                 (int(submesh_v.asu16[4]) | (int(submesh_v.asu16[1]) << 16)) + int(submesh_v.asu16[5]),
             )
 
-            # print(submesh_v)
-            # if submesh_v.asu16[0] >= len(texunit_vs):
-                # _print(f'skinSectionId is {submesh_v.asu16[0]}, how to render {self.name}??')
-                # continue
-            # texunit_v = texunit_vs[submesh_v.asu16[0]]
             texunit_v = texunit_v_per_submesh_idx[i]
             render_flags = renderflags_vs[texunit_v.asu16[5]].asu16[0]
 
@@ -221,6 +203,7 @@ class M2:
             res.append(pd.Series({
                 'pts_idxs': faces[faces_slice].reshape(-1, 3),
                 'render_flags': render_flags,
+                'mesh_part_id': submesh_v.asu16[0],
             }))
         if submesh_vs:
             assert pts_slice.stop == pts_idxs_v.asu16.size
@@ -303,9 +286,10 @@ if __name__ == '__main__':
             # 'Y:\\model.mpq\\Buckler_Round_A_01.m2', # 21v, 40f
             # 'Y:\\model.mpq\\PlaqueBronze02.m2',
             # 'Y:\\model.mpq\\G_FishingBobber.m2',
+            'Y:\\model.mpq\\HumanMale.m2',
 
 
-            p for p in glob.glob('Y:\\model.mpq\\*.m2')
+            # p for p in glob.glob('Y:\\model.mpq\\*.m2')
             # if 'KelT' in p
             # if 'Banshee' in p
     ]:
@@ -313,25 +297,6 @@ if __name__ == '__main__':
         print(path)
         m = M2(path)
         # df = m.last_lod.shape
-        print(m.last_lod)
+        print(m.last_lod[0])
         # print(m.vertices)
     print('////////////////////////////////////////////////////////////////////////////////')
-
-
-# raw = open(path, 'rb').read()
-# raw = raw[:256]
-# print(len(raw))
-
-# cols = {}
-# for name, t, n in [
-#         # ('b', lambda x: np.frombuffer(x, np.uint8, 1)[0], 1),
-#         ('i', lambda x: np.frombuffer(x, np.int32, 1)[0], 4),
-#         # ('f', lambda x: np.frombuffer(x, np.float32, 1)[0], 4),
-#         # ('d', lambda x: np.frombuffer(x, np.float64, 1)[0], 8),
-# ]:
-#     vs = {}
-#     for i in range(0, len(raw), n):
-#         vs[i] = t(raw[i:i+n])
-
-#     cols[name] = vs
-# df = pd.DataFrame(cols)

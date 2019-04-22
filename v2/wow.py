@@ -3,11 +3,13 @@ import pymem
 import psutil
 
 from constants import Offset
-from dbc import GameObjectDisplayInfo
-from objects import GameObject
+from dbc import GameObjectDisplayInfo, CreatureModelData
+from objects import GameObject, Player
 
 class WoW:
-    def __init__(self, pid=None, godi_path='Y:\\dbc\\GameObjectDisplayInfo.dbc'):
+    def __init__(self, pid=None,
+                 godi_path='Y:\\dbc\\GameObjectDisplayInfo.dbc',
+                 cmd_path='Y:\\dbc\\CreatureModelData.dbc',):
         if pid is None:
             pid, = [ps.pid for ps in psutil.process_iter() if ps.name() == 'WoW.exe']
 
@@ -27,6 +29,7 @@ class WoW:
         self.first_obj_addr = first_obj_addr
 
         self.godi = GameObjectDisplayInfo(godi_path)
+        self.cmd = CreatureModelData(cmd_path)
 
     def pull_floats(self, addr, shape):
         a = np.empty(shape, 'float32')
@@ -40,7 +43,7 @@ class WoW:
             a[idxs] = self.pm.read_uint(addr + i * 4)
         return a
 
-    def gen_objects(self):
+    def gen_objects_addr(self):
         obj_addr = self.first_obj_addr
         while True:
             if not (obj_addr != 0 and obj_addr & 0x1 == 0):
@@ -52,6 +55,11 @@ class WoW:
             obj_addr = next_addr
 
     def gen_game_objects(self):
-        for obj_addr in self.gen_objects():
+        for obj_addr in self.gen_objects_addr():
             if self.pm.read_int(obj_addr + Offset.Object.type) == 5:
                 yield GameObject(self, obj_addr)
+
+    def gen_players(self):
+        for obj_addr in self.gen_objects_addr():
+            if self.pm.read_int(obj_addr + Offset.Object.type) == 4:
+                yield Player(self, obj_addr)

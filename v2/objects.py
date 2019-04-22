@@ -2,6 +2,37 @@ import numpy as np
 
 from constants import Offset
 
+class Player:
+    def __init__(self, w, addr):
+        assert w.pm.read_int(addr + Offset.Object.type) == 4
+        self.addr = addr
+
+        self.xyz = w.pull_floats(addr + 0x009b8, (3,))
+        self.angle = -w.pull_floats(addr + 0x009c4, ())
+
+        self.model_matrix = (
+            rot(self.angle, 2) @
+            # TODO: Scale? At least for taurens female
+            # scale(w.pull_floats(addr + Offset.GameObject.scale, ())) @
+            translate(self.xyz) @
+            np.eye(4)
+        )
+
+        self.display_id, display_id_bis = w.pull_u32s(addr + 0x1f7c, (2,))
+        assert self.display_id == display_id_bis, (self.display_id, display_id_bis)
+        del display_id_bis
+
+        level = w.pull_u32s(addr + 0x01df8, ())
+        race = (w.pull_u32s(addr + 0x01e00, ()) >> 0) % 255
+        gender = (w.pull_u32s(addr + 0x01e00, ()) >> 16) % 255
+
+        if self.display_id in w.cmd.df.index:
+            self.model_name = w.cmd.df.loc[self.display_id, 'model']
+        else:
+            self.model_name = None
+
+        self.name = 'idk' # TODO: Find name!
+
 class GameObject:
     def __init__(self, w, addr):
         assert w.pm.read_int(addr + Offset.Object.type) == 5
