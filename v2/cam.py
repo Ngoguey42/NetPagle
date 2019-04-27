@@ -3,7 +3,13 @@ import numpy as np
 from constants import Offset, MAGIC_SCALE_FACTOR
 
 class Camera():
-    """Only work with 1920x1080 and windowed-borderless options"""
+    """Only work with 1920x1080 and windowed-borderless
+
+    TODO: Find the real formula for 1920x1080 @ windowed-borderless (without MAGIC_SCALE_FACTOR)
+    TODO: Work with all resolutions when windowed-draggable
+    TODO: Work when fully zoomed in
+    TODO: Work when windows resized by window
+    """
     def __init__(self, w):
         cam0 = w.pm.read_uint(w.base_address + Offset.camera)
         cam1 = w.pm.read_uint(cam0 + Offset.Camera.offset)

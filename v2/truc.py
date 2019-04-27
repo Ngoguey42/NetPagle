@@ -69,6 +69,8 @@ https://wowdev.wiki/DB/CreatureModelData
 
 
 http://www.pudn.com/Download/item/id/101052.html
+https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-emulator-servers/wow-emu-guides-tutorials/159134-race-class-gender-ids-ascent.html
+https://shynd.wordpress.com/
 
 
 """
@@ -89,6 +91,7 @@ from cam import Camera
 
 from objects import GameObject
 
+# TODO: RENDER in argv
 # RENDER = False
 RENDER = True
 
@@ -96,7 +99,7 @@ w = WoW()
 cam = Camera(w)
 
 it = []
-# it += list(w.gen_game_objects())
+it += list(w.gen_game_objects())
 it += list(w.gen_players())
 
 print('  Snapping...')
@@ -142,9 +145,6 @@ for go in it:
     # render = int(w.pull_u32s(go.addr + 0x18, ())) == 0x76005: # Myself
     mn = str(go.model_name).split("\\")[-1:]
 
-    if 'Orc' not in str(mn):
-        continue
-
     if (not RENDER) or render:
         jj += 1
         print(
@@ -161,6 +161,7 @@ for go in it:
 
     ax.text(x, y, jj, fontsize=10)
 
+    # # x, y, z axes
     # for i in range(3):
     #     c = ['red', 'green', 'blue'][i]
     #     for v in np.linspace(0, 1, 15):

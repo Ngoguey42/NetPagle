@@ -1,9 +1,88 @@
 
-# MAGIC_SCALE_FACTOR = 1 / 1.029 # TODO: Find the real formula
-MAGIC_SCALE_FACTOR = 1 / 1.096 # TODO: Find the real formula
+MAGIC_SCALE_FACTOR = 1 / 1.096
 
-# SCREEN_SIZE = 1920, 1080 # TODO: Find in memory
+# *********************************************************************************************** **
+class Offset:
+    player_name = 0x827D88
+    obj_manager = 0x00741414
+    camera = 0x0074B2BC
 
+    class PlayerNameCache:
+        # Cycling linked lst
+        root = 0xC0E230
+        class Entry:
+            next_addr = 0x0
+            guid = 0xc
+            name = 0x14
+
+    class ObjectManager:
+        first_obj = 0xAC
+
+    class Object:
+        type = 0x14
+        next = 0x3C
+        guid = 0x30
+
+    class GameObject:
+        guid = 0x30
+        name1 = 0x214
+        name2 = 0x8
+        xyz = 0x2c4
+        angle = xyz + 3 * 4
+        quaternion = xyz - 5 * 4
+        display_id = 0x2a8
+        unknown_matrix = 0x218
+        scale = 0x298
+
+    class Camera:
+        offset = 0x65B8
+        xyz = 0x8
+        facing = xyz + 3 * 4
+        fov = xyz + 14 * 4
+        aspect = xyz + 15 * 4
+
+    class Player:
+        xyz = 0x9b8
+        angle = 0x9c4
+        display_ids = 0x1f7c
+        level = 0x1df8
+        unitflags = 0x1e00
+
+# *********************************************************************************************** **
+race_name_of_race_id = {
+    0: 'None',
+    1: 'Human',
+    2: 'Orc',
+    3: 'Dwarf',
+    4: 'Night Elf',
+    5: 'Undead',
+    6: 'Tauren',
+    7: 'Gnome',
+    8: 'Troll',
+}
+race_id_of_race_name = {v: k for k, v in race_name_of_race_id.items()}
+
+class_name_of_class_id = {
+    0: 'None',
+    1: 'Warrior',
+    2: 'Paladin',
+    3: 'Hunter',
+    4: 'Rogue',
+    5: 'Priest',
+    7: 'Shaman',
+    8: 'Mage',
+    9: 'Warlock',
+    11: 'Druid',
+}
+class_id_of_class_name = {v: k for k, v in class_name_of_class_id.items()}
+
+gender_name_of_gender_id = {
+    0: 'Male',
+    1: 'Female',
+}
+gender_id_of_gender_name = {v: k for k, v in gender_name_of_gender_id.items()}
+
+# *********************************************************************************************** **
 def set_pretty_print_env(level=None):
     import logging
     import numpy as np
@@ -34,53 +113,3 @@ def set_pretty_print_env(level=None):
 
 set_pretty_print_env()
 del set_pretty_print_env
-
-class Offset:
-    player_name = 0x827D88
-    obj_manager = 0x00741414
-    camera = 0x0074B2BC
-
-    class PlayerNameCache:
-        # Cycling linked lst
-        root = 0xC0E230
-        class Entry:
-            next_addr = 0x0
-            guid = 0xc
-            name = 0x14
-
-    class ObjectManager:
-        first_obj = 0xAC
-
-    class Object:
-        type = 0x14
-        next = 0x3C
-
-    class GameObject:
-        guid = 0x30
-        name1 = 0x214
-        name2 = 0x8
-        xyz = 0x2c4
-        angle = xyz + 3 * 4
-        quaternion = xyz - 5 * 4
-        display_id = 0x2a8
-        unknown_matrix = 0x218
-        scale = 0x298
-
-    class Camera:
-        offset = 0x65B8
-        xyz = 0x8
-        facing = xyz + 3 * 4
-        fov = xyz + 14 * 4
-        aspect = xyz + 15 * 4
-
-race_name_of_race_id = {
-    1: 'Human',
-    2: 'Orc',
-    3: 'Dwarf',
-    4: 'Night Elf',
-    5: 'Undead',
-    6: 'Tauren',
-    7: 'Gnome',
-    8: 'Troll',
-}
-race_id_of_race_name = {v: k for k, v in race_name_of_race_id.items()}
