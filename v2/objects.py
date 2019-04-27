@@ -23,6 +23,8 @@ class Player:
             np.eye(4)
         )
 
+        # TODO: Test with a druid
+        # TODO: What about a sheeped player?
         # TODO: Test with an invisible character?
         self.display_id, display_id_bis = w.pull_u32s(addr + Offset.Player.display_ids, (2,))
         self.display_id = display_id_bis

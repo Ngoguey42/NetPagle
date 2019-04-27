@@ -1,40 +1,46 @@
 """
 Made for wow 1.12.1.5875, python>=3.6
 
+Developed for educational purposes. Use at your own risk.
+
 ````sh
 $ pip install pypiwin32==224 Pymem==1.0 psutil mss numpy matplotlib
 ```
 
 # Links
-### Offsets
+### Objects
 https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/208754-guide-kind-of-how-i-handle-objects.html
-https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/328263-wow-1-12-1-5875-info-dump-thread-3.html#post2436167
-https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/328263-wow-1-12-1-5875-info-dump-thread-29.html#post3680708
-https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/328263-wow-1-12-1-5875-info-dump-thread-38.html#post3859175
-https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/328263-wow-1-12-1-5875-info-dump-thread-2.html#post2331747
+https://github.com/WowDevs/Fishbot-1.12.1/blob/master/FishBot%201.12.1/GUI/MainWindow.cs
+
+### Offsets
 https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/328263-wow-1-12-1-5875-info-dump-thread-4.html#post2716691
+https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/328263-wow-1-12-1-5875-info-dump-thread-3.html#post2436167
+https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/328263-wow-1-12-1-5875-info-dump-thread-38.html#post3859175
 https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/328263-wow-1-12-1-5875-info-dump-thread-13.html#post3286690
 https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/328263-wow-1-12-1-5875-info-dump-thread-22.html#post3450098
 https://wowdev.wiki/Enumeration_%26_Structures
 http://www.cnblogs.com/hmmcsdd/archive/2007/11/30/mangoscharacterdatafielddesc.html
 
 ### Offsets on github
-https://github.com/WowDevs/Fishbot-1.12.1/blob/master/FishBot%201.12.1/Helpers/Offsets.cs
-https://github.com/acidburn974/CorthezzWoWBot/blob/master/BotTemplate/Constants/Offsets.cs
-https://github.com/acidburn974/CorthezzWoWBot/blob/master/BotTemplate/Objects/UnitObject.cs
-https://github.com/tomcook82/Aesha/blob/master/src/Aesha.Objects/Infrastructure/Offsets.cs
-https://github.com/wancharle/winprocess-utils/blob/master/test.js
-https://github.com/tovobi/cppWow1/blob/master/cppWow1/Pointers.cpp
-https://github.com/tovobi/Revlex6/blob/master/Revlex6/WowPointers.h
-https://github.com/tovobi/Revlex/blob/master/Revlex/Pointers.cs
-
-https://github.com/zhaoleirs/ccbot/blob/master/ThadHack/Constants/Offsets.cs
-https://github.com/Nekkidso/ZzukBot_v1/blob/master/ThadHack/Constants/Offsets.cs
-https://github.com/Icesythe7/ZzukBot_V3_NoAuth/blob/master/ZzukBot_WPF/Constants/Offsets.cs
-https://github.com/Zz9uk3/ZzukBot_v1/blob/master/ThadHack/Constants/Offsets.cs
-https://github.com/Zz9uk3/ZzukBot_V3/blob/master/ZzukBot_WPF/Constants/Offsets.cs
-https://github.com/Sterioss/WoWMemory/blob/master/offset.py
-https://github.com/Zz9uk3/ClassicFramework/blob/master/ClassicFramework/Objects/WoWPlayer.cs
+- https://github.com/WowDevs/Fishbot-1.12.1/blob/master/FishBot%201.12.1/Helpers/Offsets.cs
+- https://github.com/acidburn974/CorthezzWoWBot/blob/master/BotTemplate/Constants/Offsets.cs
+- https://github.com/acidburn974/CorthezzWoWBot/blob/master/BotTemplate/Objects/UnitObject.cs
+- https://github.com/acidburn974/lazybot/blob/master/LazyBot%20evolution/LazyLib/Manager/Pointers.cs?ts=4
+- https://github.com/acidburn974/WoWBotVaniilla/blob/master/WoWBot/Common/Offsets.cs?ts=4
+- https://github.com/tomcook82/Aesha/blob/master/src/Aesha.Objects/Infrastructure/Offsets.cs
+- https://github.com/wancharle/winprocess-utils/blob/master/test.js
+- tovobi
+  - https://github.com/tovobi/cppWow1/blob/master/cppWow1/Pointers.cpp
+  - https://github.com/tovobi/Revlex6/blob/master/Revlex6/WowPointers.h
+  - https://github.com/tovobi/Revlex/blob/master/Revlex/Pointers.cs
+- zzuk
+  - https://github.com/zhaoleirs/ccbot/blob/master/ThadHack/Constants/Offsets.cs
+  - https://github.com/Icesythe7/ZzukBot_V3_NoAuth/blob/master/ZzukBot_WPF/Constants/Offsets.cs
+  - https://github.com/Zz9uk3/ZzukBot_v1/blob/master/ThadHack/Constants/Offsets.cs
+  - https://github.com/Zz9uk3/ZzukBot_V3/blob/master/ZzukBot_WPF/Constants/Offsets.cs
+  - https://github.com/Zz9uk3/ClassicFramework/blob/master/ClassicFramework/Objects/WoWPlayer.cs
+- https://github.com/Sterioss/WoWMemory/blob/master/offset.py
+- https://github.com/phlip9/phlipbot/blob/master/phlipbot/wow_constants.hpp?ts=4
 
 ### world to screen
 ##### First attempt
@@ -65,13 +71,15 @@ G.skin_profiles[i].submeshes[i].skinSectionId # https://wowdev.wiki/M2/.skin#Mes
 https://wowdev.wiki/DB/GameObjectDisplayInfo
 https://wowdev.wiki/DB/CreatureModelData
 
-
-
-
+### Misc
 http://www.pudn.com/Download/item/id/101052.html
 https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-emulator-servers/wow-emu-guides-tutorials/159134-race-class-gender-ids-ascent.html
 https://shynd.wordpress.com/
-
+https://www.cheatengine.org/
+https://github.com/wowserhq/wowser
+https://github.com/wowserhq/blizzardry
+https://github.com/fallenoak/wow-data
+https://github.com/fallenoak/wowmodelviewer
 
 """
 import os
