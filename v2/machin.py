@@ -13,7 +13,6 @@ from m2 import M2
 from wow import WoW
 from cam import Camera
 from objects import GameObject
-from constants import Offset, SCREEN_SIZE, MAGIC_SCALE_FACTOR
 
 w = WoW()
 cam = Camera(w)

@@ -2,7 +2,7 @@
 # MAGIC_SCALE_FACTOR = 1 / 1.029 # TODO: Find the real formula
 MAGIC_SCALE_FACTOR = 1 / 1.096 # TODO: Find the real formula
 
-SCREEN_SIZE = 1920, 1080 # TODO: Find in memory
+# SCREEN_SIZE = 1920, 1080 # TODO: Find in memory
 
 def set_pretty_print_env(level=None):
     import logging

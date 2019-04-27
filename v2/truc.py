@@ -74,8 +74,8 @@ from show import patchify_points, patchify_polys
 from m2 import M2
 from wow import WoW
 from cam import Camera
+
 from objects import GameObject
-from constants import Offset, SCREEN_SIZE, MAGIC_SCALE_FACTOR
 
 # RENDER = False
 RENDER = True
@@ -84,7 +84,7 @@ w = WoW()
 cam = Camera(w)
 
 it = []
-# it += list(w.gen_game_objects())
+it += list(w.gen_game_objects())
 it += list(w.gen_players())
 
 print('  Snapping...')
@@ -98,13 +98,14 @@ plt.close('all')
 fig = plt.figure()
 ax = fig.add_subplot(111)
 ax.imshow(img)
+jj = 0
 
 for go in it:
     bl = [
         # 'Chaise en',
     ]
     wl = [
-        # 'lettres'
+        'lettres'
         # 'Flot'
     ]
     if bl and any(s.lower() in go.name.lower() for s in bl):
@@ -208,7 +209,7 @@ for go in it:
                     hatch=False,
                     ec=color,
                     lw=1,
-                    alpha=0.5,
+                    alpha=0.3,
                 ))
 
 if RENDER:

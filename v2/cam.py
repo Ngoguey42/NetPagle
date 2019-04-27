@@ -1,18 +1,54 @@
 import numpy as np
 
-from constants import Offset, SCREEN_SIZE, MAGIC_SCALE_FACTOR
+from constants import Offset, MAGIC_SCALE_FACTOR
 
 class Camera():
+    """Only work with 1920x1080 and windowed-borderless options"""
     def __init__(self, w):
+        print('Cam!')
         cam0 = w.pm.read_uint(w.base_address + Offset.camera)
         cam1 = w.pm.read_uint(cam0 + Offset.Camera.offset)
+
+        print("  {:#x}".format(w.base_address + Offset.camera))
+        print("  {:#x}".format(cam0))
+        print("  {:#x}".format(cam0 + Offset.Camera.offset))
+        print("  {:#x}".format(cam1))
 
         self.xyz = w.pull_floats(cam1 + Offset.Camera.xyz, (3,))
         self.facing = w.pull_floats(cam1 + Offset.Camera.facing, (3, 3))
         self.fov = w.pull_floats(cam1 + Offset.Camera.fov, ())
         self.aspect = w.pull_floats(cam1 + Offset.Camera.aspect, ())
-        self.size = np.asarray(SCREEN_SIZE)
-        assert np.allclose(self.aspect, np.divide.reduce(self.size.astype(float)))
+        self.size = self.get_screen_size(w)
+        print(self.size, np.divide.reduce(self.size.astype(float)), self.aspect)
+
+        aspect_error = abs(self.aspect - np.divide.reduce(self.size.astype(float))) / self.aspect
+        assert aspect_error < 0.005, aspect_error
+
+    @staticmethod
+    def get_screen_size(w):
+        addresses = [
+            # Screen size was found at all those addresses.
+            # If one of those addresses make the script crash, comment it.
+            0x00884E28,
+            0x00CE8B60,
+            0x00CE8B68,
+            0x00CE8B7C,
+            0x00CE8B84,
+            0x00CE8B9C,
+            0x00CE8BA4,
+        ]
+        sizes = {
+            a: w.pull_u32s(a, (2,))
+            for a in addresses
+        }
+        for a, s in sizes.items():
+            assert np.all(sizes[addresses[0]] == s), (
+                '\n'
+                f'{a:#x} says {s}'
+                '\n'
+                f'{addresses[0]:#x} says {sizes[addresses[0]]}'
+            )
+        return sizes[addresses[0]]
 
     def world_to_screen(self, xyz):
         diff = xyz - self.xyz
