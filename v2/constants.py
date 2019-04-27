@@ -40,6 +40,14 @@ class Offset:
     obj_manager = 0x00741414
     camera = 0x0074B2BC
 
+    class PlayerNameCache:
+        # Cycling linked lst
+        root = 0xC0E230
+        class Entry:
+            next_addr = 0x0
+            guid = 0xc
+            name = 0x14
+
     class ObjectManager:
         first_obj = 0xAC
 
@@ -64,3 +72,15 @@ class Offset:
         facing = xyz + 3 * 4
         fov = xyz + 14 * 4
         aspect = xyz + 15 * 4
+
+race_name_of_race_id = {
+    1: 'Human',
+    2: 'Orc',
+    3: 'Dwarf',
+    4: 'Night Elf',
+    5: 'Undead',
+    6: 'Tauren',
+    7: 'Gnome',
+    8: 'Troll',
+}
+race_id_of_race_name = {v: k for k, v in race_name_of_race_id.items()}

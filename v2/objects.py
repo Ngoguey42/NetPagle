@@ -1,12 +1,14 @@
 import numpy as np
 
 from constants import Offset
+import constants as con
 
 class Player:
     def __init__(self, w, addr):
         assert w.pm.read_int(addr + Offset.Object.type) == 4
         self.addr = addr
 
+        self.guid = w.pull_u64s(addr + 0x30, ())
         self.xyz = w.pull_floats(addr + 0x009b8, (3,))
         self.angle = -w.pull_floats(addr + 0x009c4, ())
 
@@ -19,20 +21,20 @@ class Player:
         )
 
         self.display_id, display_id_bis = w.pull_u32s(addr + 0x1f7c, (2,))
-        assert self.display_id == display_id_bis, (self.display_id, display_id_bis)
+        # assert self.display_id == display_id_bis, (self.display_id, display_id_bis)
+        self.display_id = display_id_bis
         del display_id_bis
 
-        level = w.pull_u32s(addr + 0x01df8, ())
-        race = (w.pull_u32s(addr + 0x01e00, ()) >> 0) % 256
-        gender = (w.pull_u32s(addr + 0x01e00, ()) >> 16) % 256
+        self.level = w.pull_u32s(addr + 0x01df8, ())
+        self.race = con.race_name_of_race_id[(w.pull_u32s(addr + 0x01e00, ()) >> 0) % 256]
+        self.gender = ['male', 'female'][(w.pull_u32s(addr + 0x01e00, ()) >> 16) % 256]
 
         if self.display_id in w.cmd.df.index:
             self.model_name = w.cmd.df.loc[self.display_id, 'model']
         else:
             self.model_name = None
-        print(level, race, gender, self.model_name)
 
-        self.name = 'idk' # TODO: Find name!
+        self.name = w.get_player_name(self.guid)
 
 class GameObject:
     def __init__(self, w, addr):

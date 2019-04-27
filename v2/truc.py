@@ -6,13 +6,7 @@ $ pip install pypiwin32==224 Pymem==1.0 psutil mss numpy matplotlib
 ```
 
 # Links
-
-### Fishbot
-https://github.com/WowDevs/Fishbot-1.12.1/blob/fd3855845ae12e32ca5477526017b0b9ee680b9c/FishBot%201.12.1/GUI/MainWindow.cs
-https://github.com/WowDevs/Fishbot-1.12.1/blob/fd3855845ae12e32ca5477526017b0b9ee680b9c/FishBot%201.12.1/Helpers/Offsets.cs?ts=4
-https://github.com/WowDevs/Fishbot-1.12.1/blob/fd3855845ae12e32ca5477526017b0b9ee680b9c/FishBot%201.12.1/Hook/Hook.cs?ts=4
-
-### WowObjects / offsets
+### Offsets
 https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/208754-guide-kind-of-how-i-handle-objects.html
 https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/328263-wow-1-12-1-5875-info-dump-thread-3.html#post2436167
 https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/328263-wow-1-12-1-5875-info-dump-thread-29.html#post3680708
@@ -22,17 +16,34 @@ https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-progra
 https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/328263-wow-1-12-1-5875-info-dump-thread-13.html#post3286690
 https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/328263-wow-1-12-1-5875-info-dump-thread-22.html#post3450098
 https://wowdev.wiki/Enumeration_%26_Structures
-https://github.com/acidburn974/CorthezzWoWBot/blob/master/BotTemplate/Constants/Offsets.cs
 http://www.cnblogs.com/hmmcsdd/archive/2007/11/30/mangoscharacterdatafielddesc.html
 
-# world to screen
-### First attempt
+### Offsets on github
+https://github.com/WowDevs/Fishbot-1.12.1/blob/master/FishBot%201.12.1/Helpers/Offsets.cs
+https://github.com/acidburn974/CorthezzWoWBot/blob/master/BotTemplate/Constants/Offsets.cs
+https://github.com/acidburn974/CorthezzWoWBot/blob/master/BotTemplate/Objects/UnitObject.cs
+https://github.com/tomcook82/Aesha/blob/master/src/Aesha.Objects/Infrastructure/Offsets.cs
+https://github.com/wancharle/winprocess-utils/blob/master/test.js
+https://github.com/tovobi/cppWow1/blob/master/cppWow1/Pointers.cpp
+https://github.com/tovobi/Revlex6/blob/master/Revlex6/WowPointers.h
+https://github.com/tovobi/Revlex/blob/master/Revlex/Pointers.cs
+
+https://github.com/zhaoleirs/ccbot/blob/master/ThadHack/Constants/Offsets.cs
+https://github.com/Nekkidso/ZzukBot_v1/blob/master/ThadHack/Constants/Offsets.cs
+https://github.com/Icesythe7/ZzukBot_V3_NoAuth/blob/master/ZzukBot_WPF/Constants/Offsets.cs
+https://github.com/Zz9uk3/ZzukBot_v1/blob/master/ThadHack/Constants/Offsets.cs
+https://github.com/Zz9uk3/ZzukBot_V3/blob/master/ZzukBot_WPF/Constants/Offsets.cs
+https://github.com/Sterioss/WoWMemory/blob/master/offset.py
+https://github.com/Zz9uk3/ClassicFramework/blob/master/ClassicFramework/Objects/WoWPlayer.cs
+
+### world to screen
+##### First attempt
 https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/599004-world-screen.html#post3661355
 
-### Second attempt
+##### Second attempt
 https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/535748-world-screen.html#post3347571
 
-### Third Attempt
+##### Third Attempt
 https://www.ownedcore.com/forums/world-of-warcraft/world-of-warcraft-bots-programs/wow-memory-editing/271612-world-screen.html#post1754193
 
 ### Misc
@@ -53,6 +64,7 @@ G.skin_profiles[i].submeshes[i].skinSectionId # https://wowdev.wiki/M2/.skin#Mes
 ##### DBC files
 https://wowdev.wiki/DB/GameObjectDisplayInfo
 https://wowdev.wiki/DB/CreatureModelData
+
 
 
 
@@ -84,7 +96,7 @@ w = WoW()
 cam = Camera(w)
 
 it = []
-it += list(w.gen_game_objects())
+# it += list(w.gen_game_objects())
 it += list(w.gen_players())
 
 print('  Snapping...')
@@ -105,7 +117,7 @@ for go in it:
         # 'Chaise en',
     ]
     wl = [
-        'lettres'
+        # 'lettres'
         # 'Flot'
     ]
     if bl and any(s.lower() in go.name.lower() for s in bl):
@@ -130,6 +142,9 @@ for go in it:
     # render = int(w.pull_u32s(go.addr + 0x18, ())) == 0x76005: # Myself
     mn = str(go.model_name).split("\\")[-1:]
 
+    if 'Orc' not in str(mn):
+        continue
+
     if (not RENDER) or render:
         jj += 1
         print(
@@ -139,6 +154,7 @@ for go in it:
             f'{xyz[2] - cam.xyz[2]:+7.2f}({xyz[2]:<6.2f})) '
             f'{(go.angle / np.pi * 180 + 360) % 360:5.1f}deg {mn}'
         )
+
 
     if not (RENDER and render):
         continue

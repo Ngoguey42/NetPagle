@@ -5,21 +5,14 @@ from constants import Offset, MAGIC_SCALE_FACTOR
 class Camera():
     """Only work with 1920x1080 and windowed-borderless options"""
     def __init__(self, w):
-        print('Cam!')
         cam0 = w.pm.read_uint(w.base_address + Offset.camera)
         cam1 = w.pm.read_uint(cam0 + Offset.Camera.offset)
-
-        print("  {:#x}".format(w.base_address + Offset.camera))
-        print("  {:#x}".format(cam0))
-        print("  {:#x}".format(cam0 + Offset.Camera.offset))
-        print("  {:#x}".format(cam1))
 
         self.xyz = w.pull_floats(cam1 + Offset.Camera.xyz, (3,))
         self.facing = w.pull_floats(cam1 + Offset.Camera.facing, (3, 3))
         self.fov = w.pull_floats(cam1 + Offset.Camera.fov, ())
         self.aspect = w.pull_floats(cam1 + Offset.Camera.aspect, ())
         self.size = self.get_screen_size(w)
-        print(self.size, np.divide.reduce(self.size.astype(float)), self.aspect)
 
         aspect_error = abs(self.aspect - np.divide.reduce(self.size.astype(float))) / self.aspect
         assert aspect_error < 0.005, aspect_error
