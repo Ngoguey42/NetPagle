@@ -7,6 +7,7 @@ Caveats:
 - Doesn't render animation (moving objects are rendered as static objects)
 - Doesn't render equipement
 - Doesn't render world
+- Doesn't render NPCs
 - Rendering is long, but it's fine if application is not real-time
 - No way of knowing if something is occluded
 
