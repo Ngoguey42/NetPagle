@@ -89,7 +89,7 @@ def set_pretty_print_env(level=None):
     import pandas as pd
     import warnings
 
-    np.set_printoptions(linewidth=250, threshold=np.nan, suppress=True)
+    np.set_printoptions(linewidth=250, threshold=999999999999, suppress=True)
 
     if level is None:
         level = logging.DEBUG
