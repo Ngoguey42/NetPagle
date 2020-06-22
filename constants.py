@@ -1,131 +1,115 @@
-"""
-widths = [i for i in range(64, 1921, 64)]
-combos = list(itertools.product(widths, widths))
-combos = sorted(combos, key=lambda t: -abs(t[0] / t[1] - 16/9))
-combos = [(x, y) for (x, y) in combos if -0.20 < x/y / (16/9) - 1 < 0.20]
 
-['{:9}, ratio {:+.2%}, memsize {:4.0%}'.format('{}/{}'.format(x, y), x/y / (16/9) - 1, x*y / (1920*1080)) for (x, y) in combos]
+MAGIC_SCALE_FACTOR = 1 / 1.096
 
+# *********************************************************************************************** **
+class Offset:
+    player_name = 0x827D88
+    obj_manager = 0x00741414
+    camera = 0x0074B2BC
 
- '832/512  , ratio -8.59%, memsize  21%',
- '1152/704 , ratio -7.95%, memsize  39%',
- '1216/640 , ratio +6.88%, memsize  38%',
- '1088/576 , ratio +6.25%, memsize  30%',
- '320/192  , ratio -6.25%, memsize   3%',
- '640/384  , ratio -6.25%, memsize  12%',
- '960/576  , ratio -6.25%, memsize  27%',
- '960/512  , ratio +5.47%, memsize  24%',
- '832/448  , ratio +4.46%, memsize  18%',
- '1088/640 , ratio -4.37%, memsize  34%',
- '768/448  , ratio -3.57%, memsize  17%',
- '704/384  , ratio +3.12%, memsize  13%',
- '448/256  , ratio -1.56%, memsize   6%',
- '896/512  , ratio -1.56%, memsize  22%',
- '576/320  , ratio +1.25%, memsize   9%',
- '1152/640 , ratio +1.25%, memsize  36%',
- '1920/1088, ratio -0.74%, memsize 101%',
- '1024/576 , ratio +0.00%, memsize  28%']
-"""
+    class PlayerNameCache:
+        # Cycling linked lst
+        root = 0xC0E230
+        class Entry:
+            next_addr = 0x0
+            guid = 0xc
+            name = 0x14
 
-# img_w = 1024
-# img_h = 576
+    class ObjectManager:
+        first_obj = 0xAC
 
-# img_w = 704
-# img_h = 384
+    class Object:
+        type = 0x14
+        next = 0x3C
+        guid = 0x30
 
-img_w = 448
-img_h = 256
+    class GameObject:
+        guid = 0x30
+        name1 = 0x214
+        name2 = 0x8
+        xyz = 0x2c4
+        angle = xyz + 3 * 4
+        quaternion = xyz - 5 * 4
+        display_id = 0x2a8
+        unknown_matrix = 0x218
+        scale = 0x298
 
-img_d = 3
+    class Camera:
+        offset = 0x65B8
+        xyz = 0x8
+        facing = xyz + 3 * 4
+        fov = xyz + 14 * 4
+        aspect = xyz + 15 * 4
 
-WIDTH = img_w
-HEIGHT = img_h
-AREA = WIDTH * HEIGHT
-AREA_RATIO_ORIGIN = AREA / (1920 * 1080)
-WIDTH_RATIO_ORIGIN = WIDTH / 1920
+    class Player:
+        xyz = 0x9b8
+        angle = 0x9c4
+        display_ids = 0x1f7c
+        level = 0x1df8
+        unitflags = 0x1e00
 
-n_labels = 1
+# *********************************************************************************************** **
+race_name_of_race_id = {
+    0: 'None',
+    1: 'Human',
+    2: 'Orc',
+    3: 'Dwarf',
+    4: 'Night Elf',
+    5: 'Undead',
+    6: 'Tauren',
+    7: 'Gnome',
+    8: 'Troll',
+}
+race_id_of_race_name = {v: k for k, v in race_name_of_race_id.items()}
 
-kernel = 3
+class_name_of_class_id = {
+    0: 'None',
+    1: 'Warrior',
+    2: 'Paladin',
+    3: 'Hunter',
+    4: 'Rogue',
+    5: 'Priest',
+    7: 'Shaman',
+    8: 'Mage',
+    9: 'Warlock',
+    11: 'Druid',
+}
+class_id_of_class_name = {v: k for k, v in class_name_of_class_id.items()}
 
-PREFIX = 'C:/Users/Ngo/Desktop/fishdb/current'
-# PREFIX = '/media/ngoguey/Donnees/ngoguey/fishbd'
+gender_name_of_gender_id = {
+    0: 'Male',
+    1: 'Female',
+}
+gender_id_of_gender_name = {v: k for k, v in gender_name_of_gender_id.items()}
 
-time_format = '%y-%m-%d-%H-%M-%S'
+# *********************************************************************************************** **
+def set_pretty_print_env(level=None):
+    import logging
+    import numpy as np
+    import pandas as pd
+    import warnings
 
-# TEST_NAMES = sorted([
-# 	'17-10-28-21-24-48_red-stonetalon-sunrock-scroll10_anna',
-# 	'17-10-28-21-25-29_red-stonetalon-sunrock-scroll10_shirley',
-# 	'17-10-28-21-26-08_red-stonetalon-sunrock-scroll10_june',
-# 	'17-10-28-21-27-35_red-stonetalon-sunrock-scroll10_clara-occlusion',
-# 	'17-10-28-21-29-13_red-stonetalon-sunrock-scroll10_jean',
-# 	'17-10-24-23-22-32_blue-darnassus-auctionhouse-scroll0_mildred',
-# 	'17-10-24-23-24-24_blue-darnassus-auctionhouse-scroll0_brett',
-# 	'17-10-24-23-26-01_blue-darnassus-auctionhouse-scroll0_gail',
-# 	'17-10-24-23-27-13_blue-darnassus-auctionhouse-scroll0_mary',
-# 	'17-10-24-23-28-52_blue-darnassus-auctionhouse-scroll0_gina',
-# 	'17-10-28-21-09-56_green-barrens-stagnantoasis-scroll10_lisa',
-# 	'17-10-28-20-09-45_black-silverpine-bridge-scroll5_amparo',
-# 	'17-10-28-20-30-27_black-hillsbrad-cascade-scroll5_richard',
-# 	'17-10-28-20-16-01_black-hillsbrad-tarren-scroll5_robert',
-# 	'17-10-28-19-55-15_black-silverpine-lake-scroll5_norma-occlusion',
-# 	'17-10-27-00-39-54_green-moonglade-river-scroll0_leann',
-# 	'17-10-27-08-56-45_blue-moonglade-tree-scroll0_raymond',
-# 	'17-10-24-22-58-40_blue-strangle-bootybay-scroll0_samantha',
-# 	'17-10-24-23-02-32_green-thunderbluff-poolsofvision-scroll0_alan',
-# 	'17-10-24-22-45-35_red-orgrimmar-valleyofhonor-scroll0_delores',
-# ])
+    np.set_printoptions(linewidth=250, threshold=999999999999, suppress=True)
 
-TEST_NAMES = sorted([
-	'17-10-28-14-25-00_green-undercity-magic-scroll0_hector',
-	'17-10-28-14-25-44_green-undercity-magic-scroll0_amy',
-	'17-10-28-14-37-17_green-undercity-magic-scroll0_ed',
-	'17-10-28-14-37-59_green-undercity-magic-scroll0_scott',
-	'17-10-28-14-38-55_green-undercity-magic-scroll0_roscoe',
-	'17-10-24-23-22-32_blue-darnassus-auctionhouse-scroll0_mildred',
-	'17-10-24-23-24-24_blue-darnassus-auctionhouse-scroll0_brett',
-	'17-10-24-23-26-01_blue-darnassus-auctionhouse-scroll0_gail',
-	'17-10-24-23-27-13_blue-darnassus-auctionhouse-scroll0_mary',
-	'17-10-24-23-28-52_blue-darnassus-auctionhouse-scroll0_gina',
-	'17-11-05-08-44-08_blue-darnassus-warrior-scroll0_andrew',
-	'17-11-05-08-44-48_blue-darnassus-warrior-scroll0_shirley',
-	'17-11-05-08-45-27_blue-darnassus-warrior-scroll0_barbara',
-	'17-11-05-08-46-41_blue-darnassus-warrior-scroll0_eugene',
-	'17-11-05-08-47-28_blue-darnassus-warrior-scroll0_deborah',
+    if level is None:
+        level = logging.DEBUG
+    logging.basicConfig(format='%(levelname)s:%(message)s', level=level)
 
-	'17-10-27-00-39-54_green-moonglade-river-scroll0_leann',
-	'17-10-27-08-56-45_blue-moonglade-tree-scroll0_raymond',
-	'17-10-24-22-58-40_blue-strangle-bootybay-scroll0_samantha',
-	'17-10-24-23-02-32_green-thunderbluff-poolsofvision-scroll0_alan',
-	'17-10-24-22-45-35_red-orgrimmar-valleyofhonor-scroll0_delores',
+    pd.set_option('display.width', 260)
+    pd.set_option('display.max_colwidth', 260)
+    pd.set_option('display.float_format', lambda x: '%.8f' % x)
+    pd.set_option('display.max_columns', 25)
+    pd.set_option('display.max_rows', 210)
+    # pd.set_option('display.max_rows', 125)
 
+    # http://stackoverflow.com/a/7995762
+    logging.addLevelName(logging.ERROR, "\033[1;41m%s\033[1;0m" % logging.getLevelName(logging.ERROR))
+    logging.addLevelName(logging.WARNING, "\033[1;31m%s\033[1;0m" % logging.getLevelName(logging.WARNING))
+    logging.addLevelName(logging.INFO, "\033[1;34m%s \033[1;0m" % logging.getLevelName(logging.INFO))
+    logging.addLevelName(logging.DEBUG, "\033[1;36m%s\033[1;0m" % logging.getLevelName(logging.DEBUG))
 
+    logging.getLogger('matplotlib').setLevel(logging.INFO)
+    warnings.filterwarnings("ignore", category=UserWarning, module="matplotlib")
 
-	'17-10-28-19-31-24_black-tirisfal-coast-scroll5_james',
-	'17-10-28-19-34-09_black-tirisfal-coast-scroll5_sheila',
-	'17-10-28-19-35-13_black-tirisfal-coast-scroll5_nicholas',
-	'17-10-28-19-36-21_black-tirisfal-coast-scroll5_norman',
-	'17-10-28-19-37-36_black-tirisfal-coast-scroll5_kathleen',
-
-	'17-10-28-20-09-45_black-silverpine-bridge-scroll5_amparo',
-	'17-10-28-20-30-27_black-hillsbrad-cascade-scroll5_richard',
-	'17-10-28-20-16-01_black-hillsbrad-tarren-scroll5_robert',
-	'17-10-28-19-55-15_black-silverpine-lake-scroll5_norma-occlusion',
-	'17-10-28-20-53-36_red-orgrimmar-valleyofspirit-scroll5_brenda',
-	'17-11-05-08-59-47_red-orgrimmar-valleyofspirit-scroll5_suzanna',
-	'17-10-28-21-01-11_red-barrens-ratchet-scroll5_tanya',
-
-
-
-	'17-10-28-21-24-48_red-stonetalon-sunrock-scroll10_anna',
-	'17-10-28-21-25-29_red-stonetalon-sunrock-scroll10_shirley',
-	'17-10-28-21-26-08_red-stonetalon-sunrock-scroll10_june',
-	'17-10-28-21-27-35_red-stonetalon-sunrock-scroll10_clara-occlusion',
-	'17-10-28-21-29-13_red-stonetalon-sunrock-scroll10_jean',
-
-	'17-10-28-21-09-56_green-barrens-stagnantoasis-scroll10_lisa',
-
-
-
-
-])
+set_pretty_print_env()
+del set_pretty_print_env
