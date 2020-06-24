@@ -10,9 +10,7 @@ from dbc import GameObjectDisplayInfo, CreatureModelData
 from objects import GameObject, Player
 
 class WoW:
-    def __init__(self, pid=None,
-                 godi_path='Y:\\dbc\\GameObjectDisplayInfo.dbc',
-                 cmd_path='Y:\\dbc\\CreatureModelData.dbc',):
+    def __init__(self, pid=None, godi_path=None, cmd_path=None):
         if pid is None:
             pid, = [ps.pid for ps in psutil.process_iter() if ps.name() == 'WoW.exe']
 

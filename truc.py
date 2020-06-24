@@ -1,10 +1,25 @@
 """
-Made for wow 1.12.1.5875, python>=3.6
+Made for wow 1.12.1.5875 (26 September 2006), python>=3.6
 
 Developed for educational purposes. Use at your own risk.
 
+# Usage
+### Step 1 - install deps
 ````sh
 $ pip install pypiwin32==224 Pymem==1.0 psutil mss numpy matplotlib
+```
+
+### Step 2 - Edit the 3 paths
+```
+GODI_PATH to GameObjectDisplayInfo.dbc file
+CMD_PATH to CreatureModelData.dbc file
+MODELS_PREFIX to model.mpq directory
+```
+You will have to extract those from the game's file. I don't remember which software I used but it should be linked somewhere below
+
+### Step 3 - enjoy (as administrator)
+```sh
+$ python truc.py
 ```
 
 # Links
@@ -103,19 +118,23 @@ from objects import GameObject
 # RENDER = False
 RENDER = True
 
-w = WoW()
+GODI_PATH='Y:\\dbc\\GameObjectDisplayInfo.dbc'
+CMD_PATH='Y:\\dbc\\CreatureModelData.dbc'
+MODELS_PREFIX='Y:\\model.mpq'
+
+w = WoW(godi_path=GODI_PATH, cmd_path=CMD_PATH)
 cam = Camera(w)
 
 it = []
 it += list(w.gen_game_objects())
 it += list(w.gen_players())
 
-print('  Snapping...')
+print('  Snapshoting screen...')
 with mss.mss() as sct:
     monitor = sct.monitors[1]
     img = sct.grab(monitor)
     img = np.asarray(img)[:, :, [2, 1, 0]]
-    print('  Snaped!', img.shape)
+    print('  Snapshoted!', img.shape)
 
 plt.close('all')
 fig = plt.figure()
@@ -193,7 +212,7 @@ for go in it:
     # path = 'KelThuzad.m2'
 
     path = path.replace('.MDX', '.m2').replace('.mdx', '.m2')
-    path = os.path.join('Y:\\model.mpq', path)
+    path = os.path.join(MODELS_PREFIX, path)
 
     if not os.path.isfile(path):
         print("  Can't render, missing file".format())
