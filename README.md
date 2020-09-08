@@ -24,4 +24,14 @@ python truc.py
 ```
 ![fig.jpg](fig.jpg)
 
-See `truc.py` for informations
+See `peep.py` for informations
+
+# `bobbers/*`
+A manually labeled screenshot dataset to train a CNN at localizing bobbers on screen. It contains only 135 images which is more than enough for training.
+
+The images have been compressed and downsampled to be stored on github.
+
+![fig.jpg]
+
+# `fish.py`
+A 100 line `WOW 1.12` fishing bot reading game's memory
