@@ -50,6 +50,7 @@ class GameObject:
         a += Offset.GameObject.name2
         a = w.pm.read_uint(a)
         self.name = w.pm.read_string(a)
+        self.guid = w.pull_u64s(addr + Offset.Object.guid, ()) # might be wrong
         self.xyz = w.pull_floats(addr + Offset.GameObject.xyz, (3,))
         self.angle = w.pull_floats(addr + Offset.GameObject.angle, ())
         self.quaternion = w.pull_floats(addr + Offset.GameObject.quaternion, (4,)) # i, j, k, real

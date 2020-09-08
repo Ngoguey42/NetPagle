@@ -14,8 +14,12 @@ from m2 import M2
 from wow import WoW
 from cam import Camera
 from objects import GameObject
+import constants
 
-w = WoW()
+GODI_PATH='Y:\\dbc\\GameObjectDisplayInfo.dbc'
+CMD_PATH='Y:\\dbc\\CreatureModelData.dbc'
+MODELS_PREFIX='Y:\\model.mpq'
+w = WoW(godi_path=GODI_PATH, cmd_path=CMD_PATH)
 cam = Camera(w)
 
 rows = []
@@ -68,7 +72,7 @@ for i, p in enumerate(list(w.gen_players())):
           f'{p.level:2} {p.guid:#08x})` {p.addr:#x}',
           # f'  {w.pull_u32s(p.addr + 0x8, ()):#x}',
           # f'  {w.pull_u32s(p.addr + 0x8, ()) - p.addr:#x}',
-          f'  {int(w.pull_u32s(p.addr + 0x18, ()))}'
+          f'  {int(w.pull_u32s(p.addr + 0x18, ())):#x}'
     )
 
     def _stringify(i, f):
@@ -92,3 +96,4 @@ for i, p in enumerate(list(w.gen_players())):
 
 df = pd.concat([df, pd.DataFrame(rows).T], axis=1)
 df = df.T.reset_index(drop=True).T
+# print(df)

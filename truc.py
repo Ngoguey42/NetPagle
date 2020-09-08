@@ -96,6 +96,11 @@ https://github.com/wowserhq/blizzardry
 https://github.com/fallenoak/wow-data
 https://github.com/fallenoak/wowmodelviewer
 
+### Bobbler
+0D49DE98 and
+0D49DEA0 during the animation of the bobbler
+
+
 """
 import os
 import itertools
@@ -171,6 +176,12 @@ for go in it:
     render = not behind
     # render = int(w.pull_u32s(go.addr + 0x18, ())) == 0x76005: # Myself
     mn = str(go.model_name).split("\\")[-1:]
+
+    if mn in [
+            ['transportship.wmo'],
+            ['transport_zeppelin.wmo'],
+    ]:
+        continue
 
     if (not RENDER) or render:
         jj += 1

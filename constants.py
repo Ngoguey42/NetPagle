@@ -6,6 +6,7 @@ class Offset:
     player_name = 0x827D88
     obj_manager = 0x00741414
     camera = 0x0074B2BC
+    mouseover_guid = 0x00B4E2C8
 
     class PlayerNameCache:
         # Cycling linked lst
@@ -22,6 +23,7 @@ class Offset:
         type = 0x14
         next = 0x3C
         guid = 0x30
+        bobber_status = 0xe8
 
     class GameObject:
         guid = 0x30
@@ -99,7 +101,7 @@ def set_pretty_print_env(level=None):
     pd.set_option('display.max_colwidth', 260)
     pd.set_option('display.float_format', lambda x: '%.8f' % x)
     pd.set_option('display.max_columns', 25)
-    pd.set_option('display.max_rows', 210)
+    pd.set_option('display.max_rows', 21000)
     # pd.set_option('display.max_rows', 125)
 
     # http://stackoverflow.com/a/7995762

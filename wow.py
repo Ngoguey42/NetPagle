@@ -12,7 +12,13 @@ from objects import GameObject, Player
 class WoW:
     def __init__(self, pid=None, godi_path=None, cmd_path=None):
         if pid is None:
-            pid, = [ps.pid for ps in psutil.process_iter() if ps.name() == 'WoW.exe']
+            pids = [ps.pid for ps in psutil.process_iter() if ps.name() == 'WoW.exe']
+            if len(pids) <= 1:
+                pid, = pids
+            else:
+                for i, pid in enumerate(pids):
+                    print(i, pid)
+                pid = pids[int(input().strip())]
 
         pm = pymem.Pymem()
         pm.open_process_from_id(pid)
