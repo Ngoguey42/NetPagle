@@ -35,8 +35,10 @@ class WoW:
         self.player_name = pm.read_string(self.base_address + Offset.player_name)
         self.first_obj_addr = first_obj_addr
 
-        self.godi = GameObjectDisplayInfo(godi_path)
-        self.cmd = CreatureModelData(cmd_path)
+        if godi_path is not None:
+            self.godi = GameObjectDisplayInfo(godi_path)
+        if cmd_path is not None:
+            self.cmd = CreatureModelData(cmd_path)
         self._player_name_per_guid = {}
 
     def get_player_name(self, req_guid):
