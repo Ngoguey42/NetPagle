@@ -9,9 +9,10 @@ from wow import WoW
 from cam import Camera
 from constants import Offset
 
-LURE = True
+LURE = False
+# LURE = True
 CPS = 30
-FISH = lambda: pyautogui.press("f7")
+FISH = lambda: pyautogui.press("f6")
 STOP = lambda: pyautogui.press('space')
 LURE_SELECT = lambda: (pyautogui.moveTo(1850, 450, duration=0.5), pyautogui.rightClick())
 LURE_APPLY = lambda: (pyautogui.moveTo(1650, 800, duration=0.5), pyautogui.click())
@@ -19,7 +20,10 @@ LURE_CONFIRM = lambda: (pyautogui.moveTo(900, 200, duration=0.5), pyautogui.clic
 LURE_EQUIP = lambda: (pyautogui.moveTo(1650, 800, duration=0.5), pyautogui.rightClick())
 RESET_MOUSE = lambda: (pyautogui.moveTo(1920 / 2, 1080 / 2, duration=0.5))
 
-w = WoW()
+GODI_PATH='Y:\\dbc\\GameObjectDisplayInfo.dbc'
+CMD_PATH='Y:\\dbc\\CreatureModelData.dbc'
+MODELS_PREFIX='Y:\\model.mpq'
+w = WoW(godi_path=GODI_PATH, cmd_path=CMD_PATH)
 
 class S(Enum):
     BOBBER_FLYING = 1

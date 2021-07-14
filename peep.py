@@ -9,6 +9,10 @@ Developed for educational purposes. Use at your own risk.
 $ pip install pypiwin32==224 Pymem==1.0 psutil mss numpy matplotlib
 ```
 
+> `pypiwin32==224` doesn't seem to work, but `223` seem ok too. There is also another package with almost the same name.
+
+> shapely it needed too, `conda install shapely -c conda-forge` is a good solution.
+
 ### Step 2 - Edit the 3 paths
 ```
 GODI_PATH to GameObjectDisplayInfo.dbc file
